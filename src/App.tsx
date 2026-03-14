@@ -1,30 +1,45 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import { Users, Calendar, Calculator, ClipboardList, Plus, FileSpreadsheet } from 'lucide-react';
 import { PatientSearch } from './components/PatientSearch';
 import { PatientDetail } from './components/PatientDetail';
+import { HybridAgenda } from './components/HybridAgenda';
+import { Financials } from './components/Financials';
+import { Operations as OpsComponent } from './components/Operations';
 
 const Dashboard = () => (
-  <div style={{ padding: '1rem', paddingBottom: '5rem' }}>
-    <h1 style={{ marginBottom: '0.5rem' }}>Hola, Dra. 👋</h1>
-    <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Gestión Dental Delivery & Clínica</p>
+  <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
+    <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div>
+        <h1 style={{ fontSize: '1.6rem' }}>Bienvenida, Olivia 👋</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Estatus: Clínica Boutique & Delivery</p>
+      </div>
+      <div className="glass" style={{ width: '45px', height: '45px', borderRadius: '50%', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontWeight: 'bold' }}>OC</div>
+    </header>
     
-    <div className="card" style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%)', color: 'white', border: 'none' }}>
-      <h3 style={{ marginBottom: '0.5rem' }}>Citas de hoy</h3>
-      <p style={{ fontSize: '2rem', fontWeight: 700 }}>4</p>
-      <p style={{ fontSize: '0.9rem', opacity: 0.9 }}>2 en Local / 2 Delivery</p>
+    <div className="card" style={{ background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A1A 100%)', borderLeft: '5px solid var(--primary)' }}>
+      <h3 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', opacity: 0.8 }}>Ingresos Estimados (Mes)</h3>
+      <p style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-gold)' }}>12.450.000 <span style={{ fontSize: '1rem' }}>PYG</span></p>
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+        <span className="badge badge-clinic">24 CITAS CLÍNICA</span>
+        <span className="badge badge-delivery">12 CITAS DELIVERY</span>
+      </div>
     </div>
 
-    <div style={{ marginTop: '2rem' }}>
-      <h3>Acciones Rápidas</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <Plus color="var(--primary)" />
-          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Nueva Cita</span>
+    <div style={{ marginTop: '2.5rem' }}>
+      <h3 style={{ fontSize: '1.1rem', marginBottom: '1.2rem' }}>Acciones Premium</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
+        <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '1.5rem' }}>
+          <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.8rem', borderRadius: '50%' }}>
+            <Plus color="var(--primary)" size={24} />
+          </div>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nueva Cita</span>
         </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <Users color="var(--primary)" />
-          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Nuevo Paciente</span>
+        <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '1.5rem' }}>
+          <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.8rem', borderRadius: '50%' }}>
+            <Users color="var(--primary)" size={24} />
+          </div>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Expediente</span>
         </div>
       </div>
     </div>
@@ -39,18 +54,13 @@ const PatientsPage = () => {
   }
 
   return (
-    <div style={{ padding: '1rem', paddingBottom: '5rem' }}>
+    <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
       <h1>Pacientes</h1>
-      <div style={{ marginTop: '1rem' }}>
-        <PatientSearch onSelect={setSelectedPatient} />
-      </div>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>Gestión de expedientes y registros clínicos.</p>
+      <PatientSearch onSelect={setSelectedPatient} />
     </div>
   );
 };
-
-import { HybridAgenda } from './components/HybridAgenda';
-import { Operations as OpsComponent } from './components/Operations';
-import { Financials } from './components/Financials';
 
 const Agenda = () => <HybridAgenda />;
 const Finance = () => <Financials />;
@@ -59,7 +69,7 @@ const Ops = () => <OpsComponent />;
 const App = () => {
   return (
     <Router>
-      <div className="app-container">
+      <div className="app-container" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/patients" element={<PatientsPage />} />
@@ -87,7 +97,7 @@ const App = () => {
           </NavLink>
           <NavLink to="/ops" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <FileSpreadsheet size={22} />
-            <span>Operac.</span>
+            <span>Herramientas</span>
           </NavLink>
         </nav>
       </div>

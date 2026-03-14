@@ -9,6 +9,15 @@ export const Odontogram = () => {
   const [data, setData] = useState<Record<number, Record<string, string>>>({});
   const [selectedState, setSelectedState] = useState('caries');
 
+  const states = [
+    { id: 'caries', label: 'Caries', color: '#EF4444' },
+    { id: 'done', label: 'Realizado', color: 'var(--success)' },
+    { id: 'crown', label: 'Corona', color: 'var(--primary)' },
+    { id: 'implant', label: 'Implante', color: '#8B5CF6' },
+    { id: 'absent', label: 'Ausente', color: '#111' },
+    { id: 'protesis', label: 'Prótesis', color: '#D946EF' }
+  ];
+
   const handleToothClick = (id: number, surface: string) => {
     setData(prev => ({
       ...prev,
@@ -21,15 +30,20 @@ export const Odontogram = () => {
 
   return (
     <div className="odontogram-container" style={{ padding: '1rem' }}>
-      <div className="controls" style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-        {['caries', 'done', 'absent', 'protesis'].map(s => (
+      <div className="controls" style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.8rem', overflowX: 'auto', paddingBottom: '1rem' }}>
+        {states.map(s => (
           <button 
-            key={s}
-            className={`btn ${selectedState === s ? 'btn-primary' : ''}`}
-            style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}
-            onClick={() => setSelectedState(s)}
+            key={s.id}
+            className={`btn ${selectedState === s.id ? 'btn-primary' : 'btn-outline'}`}
+            style={{ 
+              fontSize: '0.75rem', 
+              padding: '0.6rem 1.2rem',
+              whiteSpace: 'nowrap',
+              borderLeft: selectedState !== s.id ? `4px solid ${s.color}` : 'none'
+            }}
+            onClick={() => setSelectedState(s.id)}
           >
-            {s.charAt(0).toUpperCase() + s.slice(1)}
+            {s.label}
           </button>
         ))}
       </div>

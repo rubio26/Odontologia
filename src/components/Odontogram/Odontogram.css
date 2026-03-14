@@ -1,24 +1,31 @@
 .surface {
-  stroke: #CBD5E1;
-  stroke-width: 1;
+  stroke: var(--border-luxury);
+  stroke-width: 1.5;
   cursor: pointer;
-  transition: fill 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.surface.healthy { fill: white; }
+.surface:hover {
+  filter: brightness(1.2) drop-shadow(0 0 5px var(--primary-glow));
+}
+
+.surface.healthy { fill: rgba(255, 255, 255, 0.05); }
 .surface.caries { fill: #EF4444; }
-.surface.done { fill: #10B981; }
-.surface.absent { fill: #94A3B8; }
-.surface.protesis { fill: #8B5CF6; }
+.surface.done { fill: var(--success); }
+.surface.absent { fill: #111111; opacity: 0.8; }
+.surface.crown { fill: var(--primary); }
+.surface.implant { fill: #8B5CF6; }
+.surface.protesis { fill: #D946EF; }
 
 .tooth-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 0.5rem;
-  padding: 1rem;
-  background: white;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow);
+  gap: 0.8rem;
+  padding: 1.5rem;
+  background: var(--surface-dark);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-luxury);
+  box-shadow: var(--shadow-gold);
 }
 
 .odontogram-section {
