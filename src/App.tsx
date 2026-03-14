@@ -1,121 +1,98 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import { Users, Calendar, Calculator, ClipboardList, Plus, FileSpreadsheet } from 'lucide-react';
+import { PatientSearch } from './components/PatientSearch';
+import { PatientDetail } from './components/PatientDetail';
 
-function App() {
-  const [count, setCount] = useState(0)
+const Dashboard = () => (
+  <div style={{ padding: '1rem', paddingBottom: '5rem' }}>
+    <h1 style={{ marginBottom: '0.5rem' }}>Hola, Dra. 👋</h1>
+    <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Gestión Dental Delivery & Clínica</p>
+    
+    <div className="card" style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%)', color: 'white', border: 'none' }}>
+      <h3 style={{ marginBottom: '0.5rem' }}>Citas de hoy</h3>
+      <p style={{ fontSize: '2rem', fontWeight: 700 }}>4</p>
+      <p style={{ fontSize: '0.9rem', opacity: 0.9 }}>2 en Local / 2 Delivery</p>
+    </div>
+
+    <div style={{ marginTop: '2rem' }}>
+      <h3>Acciones Rápidas</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+          <Plus color="var(--primary)" />
+          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Nueva Cita</span>
+        </div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+          <Users color="var(--primary)" />
+          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Nuevo Paciente</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const PatientsPage = () => {
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+
+  if (selectedPatient) {
+    return <PatientDetail patient={selectedPatient} onBack={() => setSelectedPatient(null)} />;
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ padding: '1rem', paddingBottom: '5rem' }}>
+      <h1>Pacientes</h1>
+      <div style={{ marginTop: '1rem' }}>
+        <PatientSearch onSelect={setSelectedPatient} />
+      </div>
+    </div>
+  );
+};
 
-      <div className="ticks"></div>
+import { HybridAgenda } from './components/HybridAgenda';
+import { Operations as OpsComponent } from './components/Operations';
+import { Financials } from './components/Financials';
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+const Agenda = () => <HybridAgenda />;
+const Finance = () => <Financials />;
+const Ops = () => <OpsComponent />;
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
+const App = () => {
+  return (
+    <Router>
+      <div className="app-container">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/patients" element={<PatientsPage />} />
+          <Route path="/agenda" element={<Agenda />} />
+          <Route path="/finance" element={<Finance />} />
+          <Route path="/ops" element={<Ops />} />
+        </Routes>
 
-export default App
+        <nav className="bottom-nav">
+          <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <ClipboardList size={22} />
+            <span>Inicio</span>
+          </NavLink>
+          <NavLink to="/agenda" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <Calendar size={22} />
+            <span>Agenda</span>
+          </NavLink>
+          <NavLink to="/patients" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <Users size={22} />
+            <span>Pacientes</span>
+          </NavLink>
+          <NavLink to="/finance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <Calculator size={22} />
+            <span>Finanzas</span>
+          </NavLink>
+          <NavLink to="/ops" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <FileSpreadsheet size={22} />
+            <span>Operac.</span>
+          </NavLink>
+        </nav>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
