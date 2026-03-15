@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Plus, Save, Activity, Heart, Calendar } from 'lucide-react';
+import { Plus, Save, Activity, Heart, Calendar, Clock } from 'lucide-react';
 
 interface EvolutionNote {
   id: string;
@@ -11,10 +11,18 @@ interface EvolutionNote {
   pa_min: number;
   anesthesia_sensitivity: string;
   antibiotic_sensitivity: string;
+  next_appointment_date: string | null;
+  budget_id: string | null;
+}
+
+interface Budget {
+  id: string;
+  description: string;
 }
 
 export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
   const [notes, setNotes] = useState<EvolutionNote[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingNote, setAddingNote] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -25,11 +33,14 @@ export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
     pa_max: 120,
     pa_min: 80,
     anesthesia_sensitivity: 'Ninguna',
-    antibiotic_sensitivity: 'Ninguna'
+    antibiotic_sensitivity: 'Ninguna',
+    next_appointment_date: '',
+    budget_id: ''
   });
 
   useEffect(() => {
     fetchNotes();
+    fetchBudgets();
   }, [patientId]);
 
   const fetchNotes = async () => {
@@ -45,6 +56,16 @@ export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
     setLoading(false);
   };
 
+  const fetchBudgets = async () => {
+    const { data } = await supabase
+      .from('budgets')
+      .select('id, description')
+      .eq('patient_id', patientId)
+      .eq('status', 'active');
+    
+    if (data) setBudgets(data);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -56,7 +77,9 @@ export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
       pa_max: newNote.pa_max,
       pa_min: newNote.pa_min,
       anesthesia_sensitivity: newNote.anesthesia_sensitivity,
-      antibiotic_sensitivity: newNote.antibiotic_sensitivity
+      antibiotic_sensitivity: newNote.antibiotic_sensitivity,
+      next_appointment_date: newNote.next_appointment_date || null,
+      budget_id: newNote.budget_id || null
     });
 
     if (!error) {
@@ -67,11 +90,12 @@ export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
         pa_max: 120,
         pa_min: 80,
         anesthesia_sensitivity: 'Ninguna',
-        antibiotic_sensitivity: 'Ninguna'
+        antibiotic_sensitivity: 'Ninguna',
+        next_appointment_date: '',
+        budget_id: ''
       });
       fetchNotes();
       
-      // Also register a transaction if there was a payment
       if (newNote.amount_paid > 0) {
         await supabase.from('transactions').insert({
           patient_id: patientId,
@@ -145,6 +169,20 @@ export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
           </div>
 
           <div className="input-group" style={{ marginBottom: '1rem' }}>
+            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Vincular a Presupuesto</label>
+            <select 
+              className="input-field" 
+              value={newNote.budget_id}
+              onChange={e => setNewNote({...newNote, budget_id: e.target.value})}
+            >
+              <option value="">Ninguno</option>
+              {budgets.map(b => (
+                <option key={b.id} value={b.id}>{b.description}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="input-group" style={{ marginBottom: '1rem' }}>
             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Procedimiento / Notas</label>
             <textarea 
               className="input-field" 
@@ -156,14 +194,25 @@ export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
             />
           </div>
 
-          <div className="input-group" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Entrega de Pago (PYG)</label>
-            <input 
-              type="number" 
-              className="input-field" 
-              value={newNote.amount_paid} 
-              onChange={e => setNewNote({...newNote, amount_paid: parseInt(e.target.value)})} 
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="input-group">
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Entrega de Pago (PYG)</label>
+              <input 
+                type="number" 
+                className="input-field" 
+                value={newNote.amount_paid} 
+                onChange={e => setNewNote({...newNote, amount_paid: parseInt(e.target.value)})} 
+              />
+            </div>
+            <div className="input-group">
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Próxima Cita</label>
+              <input 
+                type="date" 
+                className="input-field" 
+                value={newNote.next_appointment_date} 
+                onChange={e => setNewNote({...newNote, next_appointment_date: e.target.value})} 
+              />
+            </div>
           </div>
 
           <button type="submit" className="btn btn-primary w-full" disabled={saving}>
@@ -195,6 +244,12 @@ export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
               </div>
 
               <p style={{ fontSize: '0.9rem', marginBottom: '0.8rem', lineHeight: '1.4' }}>{note.procedure_notes}</p>
+
+              {note.next_appointment_date && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-gold)', marginBottom: '0.8rem', background: 'rgba(212, 175, 55, 0.05)', padding: '0.4rem 0.8rem', borderRadius: '8px', width: 'fit-content' }}>
+                  <Clock size={14} /> Próxima Cita: {new Date(note.next_appointment_date).toLocaleDateString('es-ES')}
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.6rem', marginTop: '0.6rem' }}>
                 <div style={{ fontSize: '0.75rem', color: note.anesthesia_sensitivity === 'Ninguna' ? 'var(--text-muted)' : 'var(--error)' }}>

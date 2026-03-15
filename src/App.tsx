@@ -9,7 +9,7 @@ import { Financials } from './components/Financials';
 import { AccessManagement } from './components/Admin/AccessManagement';
 import { NewAppointment } from './components/NewAppointment';
 import { Operations } from './components/Operations';
-import { PendingTreatments } from './components/PendingTreatments';
+import { PendingTreatments } from './components/PendingTreatments.tsx';
 import { Auth } from './components/Auth/Auth';
 
 

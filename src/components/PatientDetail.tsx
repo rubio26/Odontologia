@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { ArrowLeft, MessageCircle, FileText, Activity, Camera, PenTool, MapPin, ClipboardList } from 'lucide-react';
+import { ArrowLeft, FileText, Activity, Camera, PenTool, MapPin, ClipboardList } from 'lucide-react';
 import { PhotoGallery } from './Clinical/PhotoGallery';
 import { DigitalConsent } from './Clinical/DigitalConsent';
 import { Odontogram } from './Odontogram/Odontogram';
 import { ClinicalEvolution } from './Clinical/ClinicalEvolution';
+import { BudgetManager } from './Clinical/BudgetManager';
 
 export const PatientDetail = ({ patient, onBack }: { patient: any, onBack: () => void }) => {
   const [activeTab, setActiveTab] = useState('clinical'); // clinical, budget, gallery, consent
   const [locationFilter, setLocationFilter] = useState<'all' | 'clinic' | 'delivery'>('all');
 
-  const shareViaWhatsApp = () => {
-    const text = `Hola ${patient.full_name}, adjunto el presupuesto detallado de su tratamiento dental.`;
-    window.open(`https://wa.me/${patient.phone?.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`);
-  };
+
 
   return (
     <div style={{ paddingBottom: '6rem', backgroundColor: 'var(--bg-dark)', minHeight: '100vh' }}>
@@ -91,16 +89,11 @@ export const PatientDetail = ({ patient, onBack }: { patient: any, onBack: () =>
 
       {activeTab === 'budget' && (
         <div style={{ padding: '1rem' }}>
-          <div className="card glass">
-            <h3>Presupuesto Elite</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Proyección estética y funcional del tratamiento.</p>
-            <button className="btn btn-primary" style={{ width: '100%', marginBottom: '1rem' }} onClick={shareViaWhatsApp}>
-              <MessageCircle size={20} /> Compartir vía WhatsApp
-            </button>
-            <button className="btn btn-outline" style={{ width: '100%' }}>
-              <FileText size={20} /> Generar PDF HD
-            </button>
-          </div>
+          <BudgetManager 
+            patientId={patient.id} 
+            patientName={patient.full_name} 
+            patientPhone={patient.phone} 
+          />
         </div>
       )}
     </div>
