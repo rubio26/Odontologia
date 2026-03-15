@@ -1,4 +1,4 @@
-import { Terminal, Droplets, CheckCircle2, History, FlaskConical, Beaker } from 'lucide-react';
+import { Terminal, Droplets, CheckCircle2, History, FlaskConical } from 'lucide-react';
 
 export const Operations = () => {
   const labOrders = [

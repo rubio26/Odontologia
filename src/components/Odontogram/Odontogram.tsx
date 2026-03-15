@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Tooth } from './Tooth';
-import { Save, History as HistoryIcon, ShieldCheck } from 'lucide-react';
+import { Save, ShieldCheck } from 'lucide-react';
 import './Odontogram.css';
 
 const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];

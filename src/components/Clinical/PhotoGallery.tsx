@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Image as ImageIcon, Grid, Maximize2, Share2, MousePointer2 } from 'lucide-react';
+import { Camera, Grid, Maximize2, Share2, MousePointer2 } from 'lucide-react';
 
 export const PhotoGallery = () => {
   const [view, setView] = useState<'grid' | 'compare'>('grid');

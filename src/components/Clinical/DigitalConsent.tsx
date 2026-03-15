@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { PenTool, FileCheck, Trash2, Download } from 'lucide-react';
+import { PenTool, FileCheck, Trash2 } from 'lucide-react';
 
 export const DigitalConsent = ({ patientName }: { patientName: string }) => {
   const sigCanvas = useRef<SignatureCanvas>(null);
