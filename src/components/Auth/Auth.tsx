@@ -83,7 +83,7 @@ export const Auth = ({ onSession }: AuthProps) => {
         <div className="auth-card glass" style={{ textAlign: 'center' }}>
           <div className="logo-section">
             <Sparkles className="sparkle-icon" color="var(--primary)" size={48} />
-            <h1>Lumina</h1>
+            <h1>Lumini</h1>
             <p className="subtitle">Dental Studio</p>
           </div>
           <div style={{ marginTop: '2rem' }}>
@@ -106,13 +106,13 @@ export const Auth = ({ onSession }: AuthProps) => {
       <div className="auth-card glass">
         <div className="logo-section">
           <Sparkles className="sparkle-icon" color="var(--primary)" size={48} />
-          <h1>Lumina</h1>
+          <h1>Lumini</h1>
           <p className="subtitle">Dental Studio</p>
         </div>
 
         <form onSubmit={handleAuth} className="auth-form">
           <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-            {isLogin ? 'Bienvenido de Nuevo' : 'Únete a Lumina'}
+            {isLogin ? 'Bienvenido de Nuevo' : 'Únete a Lumini'}
           </h2>
 
           {!isLogin ? (

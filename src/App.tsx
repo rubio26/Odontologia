@@ -17,7 +17,7 @@ const Dashboard = ({ profile }: { profile: any }) => (
     <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div>
         <h1 style={{ fontSize: '1.6rem' }}>Bienvenido, {profile?.preferred_name || 'Colega'} 👋</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Estatus: Lumina Dental Studio</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Estatus: Lumini Dental Studio</p>
       </div>
       <div 
         className="glass" 
@@ -83,7 +83,7 @@ const LoadingScreen = () => (
   <div className="auth-container">
     <div style={{ textAlign: 'center' }}>
       <Sparkles className="animate-spin" color="var(--primary)" size={48} />
-      <p style={{ marginTop: '1rem', color: 'var(--text-gold)', letterSpacing: '0.2em' }}>LUMINA</p>
+      <p style={{ marginTop: '1rem', color: 'var(--text-gold)', letterSpacing: '0.2em' }}>LUMINI</p>
     </div>
   </div>
 );

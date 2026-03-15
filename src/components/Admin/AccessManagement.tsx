@@ -92,7 +92,7 @@ export const AccessManagement = () => {
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <ShieldAlert color="var(--warning)" />
           <div style={{ fontSize: '0.8rem' }}>
-            <p style={{ fontWeight: 700 }}>Seguridad Lumina</p>
+            <p style={{ fontWeight: 700 }}>Seguridad Lumini</p>
             <p style={{ color: 'var(--text-muted)' }}>Solo usuarios aprobados pueden visualizar datos sensibles de la clínica.</p>
           </div>
         </div>

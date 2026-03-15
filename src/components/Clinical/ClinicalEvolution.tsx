@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Plus, Save, Activity, Heart, Droplets, Trash2, Calendar } from 'lucide-react';
+import { Plus, Save, Activity, Heart, Calendar } from 'lucide-react';
 
 interface EvolutionNote {
   id: string;
