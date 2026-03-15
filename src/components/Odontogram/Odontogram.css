@@ -1,31 +1,56 @@
-.surface {
-  stroke: var(--border-luxury);
-  stroke-width: 1.5;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.odontogram-container {
+  max-width: 100%;
+  padding: 1rem;
 }
-
-.surface:hover {
-  filter: brightness(1.2) drop-shadow(0 0 5px var(--primary-glow));
-}
-
-.surface.healthy { fill: rgba(255, 255, 255, 0.05); }
-.surface.caries { fill: #EF4444; }
-.surface.done { fill: var(--success); }
-.surface.absent { fill: #111111; opacity: 0.8; }
-.surface.crown { fill: var(--primary); }
-.surface.implant { fill: #8B5CF6; }
-.surface.protesis { fill: #D946EF; }
 
 .tooth-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 0.8rem;
+  gap: 12px;
+  justify-items: center;
   padding: 1.5rem;
   background: var(--surface-dark);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-luxury);
   box-shadow: var(--shadow-gold);
+  margin-top: 1rem;
+}
+
+.tooth-wrapper {
+  transition: transform 0.2s ease;
+}
+
+.tooth-wrapper:hover {
+  transform: translateY(-5px);
+}
+
+.tooth-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.surface-path {
+  fill: rgba(255, 255, 255, 0.05);
+  stroke: rgba(212, 175, 55, 0.2);
+  stroke-width: 1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.surface-path:hover {
+  fill: rgba(212, 175, 55, 0.2);
+  stroke-width: 2;
+}
+
+.surface-path.caries { fill: var(--error); fill-opacity: 0.8; stroke: #800; }
+.surface-path.done { fill: var(--success); fill-opacity: 0.8; stroke: #064; }
+.surface-path.crown { fill: var(--primary); fill-opacity: 0.6; stroke: var(--primary); }
+.surface-path.implant { fill: #8B5CF6; fill-opacity: 0.8; }
+.surface-path.protesis { fill: #D946EF; fill-opacity: 0.4; }
+
+.absent .tooth-svg {
+  opacity: 0.1;
 }
 
 .odontogram-section {
@@ -33,8 +58,26 @@
 }
 
 .section-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
   display: block;
+  text-align: center;
+  color: var(--text-gold);
+  font-family: var(--font-heading);
+  letter-spacing: 0.2em;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.controls {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+}
+
+.controls::-webkit-scrollbar {
+  height: 4px;
+}
+
+.controls::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
 }
