@@ -6,9 +6,11 @@ import { PatientSearch } from './components/PatientSearch';
 import { PatientDetail } from './components/PatientDetail';
 import { HybridAgenda } from './components/HybridAgenda';
 import { Financials } from './components/Financials';
-import { Operations as OpsComponent } from './components/Operations';
-import { Auth } from './components/Auth/Auth';
 import { AccessManagement } from './components/Admin/AccessManagement';
+import { NewAppointment } from './components/NewAppointment';
+import { Operations } from './components/Operations';
+import { Auth } from './components/Auth/Auth';
+
 
 const Dashboard = ({ profile }: { profile: any }) => (
   <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
@@ -36,23 +38,24 @@ const Dashboard = ({ profile }: { profile: any }) => (
       </div>
     </div>
 
-    <div style={{ marginTop: '2.5rem' }}>
-      <h3 style={{ fontSize: '1.1rem', marginBottom: '1.2rem' }}>Acciones Premium</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
-        <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '1.5rem' }}>
-          <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.8rem', borderRadius: '50%' }}>
-            <Plus color="var(--primary)" size={24} />
+        <NavLink to="/new-appointment" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '1.5rem' }}>
+            <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.8rem', borderRadius: '50%' }}>
+              <Plus color="var(--primary)" size={24} />
+            </div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nueva Cita</span>
           </div>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nueva Cita</span>
-        </div>
-        <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '1.5rem' }}>
-          <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.8rem', borderRadius: '50%' }}>
-            <Users color="var(--primary)" size={24} />
+        </NavLink>
+        <NavLink to="/patients" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '1.5rem' }}>
+            <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.8rem', borderRadius: '50%' }}>
+              <Users color="var(--primary)" size={24} />
+            </div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Expediente</span>
           </div>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Expediente</span>
-        </div>
+        </NavLink>
       </div>
-    </div>
   </div>
 );
 
@@ -74,7 +77,7 @@ const PatientsPage = () => {
 
 const Agenda = () => <HybridAgenda />;
 const Finance = () => <Financials />;
-const Ops = () => <OpsComponent />;
+const Ops = () => <Operations />;
 
 const LoadingScreen = () => (
   <div className="auth-container">
@@ -164,6 +167,7 @@ const App = () => {
       <div className="app-container" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
         <Routes>
           <Route path="/" element={<Dashboard profile={profile} />} />
+          <Route path="/new-appointment" element={<NewAppointment />} />
           <Route path="/patients" element={<PatientsPage />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route path="/finance" element={<Finance />} />

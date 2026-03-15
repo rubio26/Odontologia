@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeft, MessageCircle, FileText, Activity, Camera, PenTool, MapPin } from 'lucide-react';
+import { ArrowLeft, MessageCircle, FileText, Activity, Camera, PenTool, MapPin, ClipboardList } from 'lucide-react';
 import { PhotoGallery } from './Clinical/PhotoGallery';
 import { DigitalConsent } from './Clinical/DigitalConsent';
 import { Odontogram } from './Odontogram/Odontogram';
+import { ClinicalEvolution } from './Clinical/ClinicalEvolution';
 
 export const PatientDetail = ({ patient, onBack }: { patient: any, onBack: () => void }) => {
   const [activeTab, setActiveTab] = useState('clinical'); // clinical, budget, gallery, consent
@@ -19,13 +20,18 @@ export const PatientDetail = ({ patient, onBack }: { patient: any, onBack: () =>
         <button className="btn btn-outline" style={{ padding: '0.5rem' }} onClick={onBack}><ArrowLeft size={20} /></button>
         <div>
           <h2 style={{ fontSize: '1.2rem', margin: 0 }}>{patient.full_name}</h2>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>ID: {patient.document_id}</p>
+          <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+            <span>ID: {patient.document_id}</span>
+            <span>• {patient.profession || 'Profesión n/a'}</span>
+            <span>• {patient.phone}</span>
+          </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: '0.8rem', padding: '1rem', overflowX: 'auto', background: 'rgba(212, 175, 55, 0.05)', scrollbarWidth: 'none' }}>
         {[
-          { id: 'clinical', label: 'Clínica', icon: <Activity size={16} /> },
+          { id: 'clinical', label: 'Odontograma', icon: <Activity size={16} /> },
+          { id: 'evolution', label: 'Evolución', icon: <ClipboardList size={16} /> },
           { id: 'budget', label: 'Presupuesto', icon: <FileText size={16} /> },
           { id: 'gallery', label: 'Galería', icon: <Camera size={16} /> },
           { id: 'consent', label: 'Firma', icon: <PenTool size={16} /> }
@@ -62,6 +68,12 @@ export const PatientDetail = ({ patient, onBack }: { patient: any, onBack: () =>
             <MapPin size={12} /> {locationFilter === 'all' ? 'Mostrando todo el historial' : `Filtrado por: ${locationFilter}`}
           </p>
           <Odontogram patientId={patient.id} />
+        </div>
+      )}
+
+      {activeTab === 'evolution' && (
+        <div style={{ padding: '1rem' }}>
+          <ClinicalEvolution patientId={patient.id} />
         </div>
       )}
 
