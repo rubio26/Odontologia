@@ -19,7 +19,8 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
     { id: 'crown', label: 'Corona', color: 'var(--primary)' },
     { id: 'implant', label: 'Implante', color: '#8B5CF6' },
     { id: 'absent', label: 'Ausente', color: '#333' },
-    { id: 'protesis', label: 'Prótesis', color: '#D946EF' }
+    { id: 'protesis', label: 'Prótesis', color: '#D946EF' },
+    { id: 'exodoncia', label: 'Exodoncia', color: '#EF4444' }
   ];
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
   };
 
   const handleToothClick = (id: number, surface: string) => {
-    const wholeToothStates = ['crown', 'implant', 'absent', 'protesis'];
+    const wholeToothStates = ['crown', 'implant', 'absent', 'protesis', 'exodoncia'];
     
     if (wholeToothStates.includes(selectedState)) {
       const newState = data[id]?.center === selectedState ? 'healthy' : selectedState;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Users, Calendar, ClipboardList, Plus, FileSpreadsheet, ShieldCheck, LogOut, Clock, XCircle, Sparkles } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { PatientSearch } from './components/PatientSearch';
@@ -9,6 +9,7 @@ import { Financials } from './components/Financials';
 import { AccessManagement } from './components/Admin/AccessManagement';
 import { NewAppointment } from './components/NewAppointment';
 import { Operations } from './components/Operations';
+import { PendingTreatments } from './components/PendingTreatments';
 import { Auth } from './components/Auth/Auth';
 
 
@@ -38,21 +39,29 @@ const Dashboard = ({ profile }: { profile: any }) => (
       </div>
     </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
         <NavLink to="/new-appointment" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '1.5rem' }}>
-            <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.8rem', borderRadius: '50%' }}>
-              <Plus color="var(--primary)" size={24} />
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
+            <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
+              <Plus color="var(--primary)" size={20} />
             </div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nueva Cita</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Nueva Cita</span>
+          </div>
+        </NavLink>
+        <NavLink to="/pending" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
+              <Clock color="#EF4444" size={20} />
+            </div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Pendientes</span>
           </div>
         </NavLink>
         <NavLink to="/patients" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', padding: '1.5rem' }}>
-            <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.8rem', borderRadius: '50%' }}>
-              <Users color="var(--primary)" size={24} />
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
+            <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
+              <Users color="var(--primary)" size={20} />
             </div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Expediente</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Expediente</span>
           </div>
         </NavLink>
       </div>
@@ -60,7 +69,28 @@ const Dashboard = ({ profile }: { profile: any }) => (
 );
 
 const PatientsPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const state = location.state as { selectedPatientId?: string };
+    if (state?.selectedPatientId) {
+      fetchPatient(state.selectedPatientId);
+      // Clear state so it doesn't re-trigger on refresh/back
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
+
+  const fetchPatient = async (id: string) => {
+    setLoading(true);
+    const { data } = await supabase.from('patients').select('*').eq('id', id).single();
+    if (data) setSelectedPatient(data);
+    setLoading(false);
+  };
+
+  if (loading) return <LoadingScreen />;
 
   if (selectedPatient) {
     return <PatientDetail patient={selectedPatient} onBack={() => setSelectedPatient(null)} />;
@@ -168,6 +198,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Dashboard profile={profile} />} />
           <Route path="/new-appointment" element={<NewAppointment />} />
+          <Route path="/pending" element={<PendingTreatments />} />
           <Route path="/patients" element={<PatientsPage />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route path="/finance" element={<Finance />} />

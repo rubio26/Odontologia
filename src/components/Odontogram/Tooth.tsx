@@ -11,6 +11,7 @@ export const Tooth: React.FC<ToothProps> = ({ id, surfaces, onClick }) => {
   const isImplant = Object.values(surfaces).every(s => s === 'implant');
   const isAbsent = Object.values(surfaces).every(s => s === 'absent');
   const isProtesis = Object.values(surfaces).every(s => s === 'protesis');
+  const isExodoncia = Object.values(surfaces).every(s => s === 'exodoncia');
 
   return (
     <div className={`tooth-container ${isAbsent ? 'absent' : ''}`} style={{ textAlign: 'center' }}>
@@ -73,6 +74,13 @@ export const Tooth: React.FC<ToothProps> = ({ id, surfaces, onClick }) => {
 
           {isProtesis && (
             <path d="M10,40 Q50,30 90,40" stroke="#D946EF" strokeWidth="4" fill="none" strokeDasharray="4 2" />
+          )}
+
+          {isExodoncia && (
+            <g>
+              <line x1="20" y1="20" x2="80" y2="80" stroke="#EF4444" strokeWidth="8" strokeLinecap="round" />
+              <line x1="80" y1="20" x2="20" y2="80" stroke="#EF4444" strokeWidth="8" strokeLinecap="round" />
+            </g>
           )}
         </svg>
       </div>
