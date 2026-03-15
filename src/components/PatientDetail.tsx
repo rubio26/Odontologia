@@ -61,7 +61,7 @@ export const PatientDetail = ({ patient, onBack }: { patient: any, onBack: () =>
           <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
             <MapPin size={12} /> {locationFilter === 'all' ? 'Mostrando todo el historial' : `Filtrado por: ${locationFilter}`}
           </p>
-          <Odontogram />
+          <Odontogram patientId={patient.id} />
         </div>
       )}
 
