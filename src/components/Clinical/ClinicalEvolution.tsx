@@ -20,11 +20,17 @@ interface Budget {
   description: string;
 }
 
-export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
+export const ClinicalEvolution = ({ 
+  patientId, 
+  autoAddNew = false 
+}: { 
+  patientId: string, 
+  autoAddNew?: boolean 
+}) => {
   const [notes, setNotes] = useState<EvolutionNote[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addingNote, setAddingNote] = useState(false);
+  const [addingNote, setAddingNote] = useState(autoAddNew);
   const [saving, setSaving] = useState(false);
   
   const [newNote, setNewNote] = useState({
@@ -41,7 +47,10 @@ export const ClinicalEvolution = ({ patientId }: { patientId: string }) => {
   useEffect(() => {
     fetchNotes();
     fetchBudgets();
-  }, [patientId]);
+    if (autoAddNew) {
+      setAddingNote(true);
+    }
+  }, [patientId, autoAddNew]);
 
   const fetchNotes = async () => {
     const { data, error } = await supabase

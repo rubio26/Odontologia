@@ -6,8 +6,18 @@ import { Odontogram } from './Odontogram/Odontogram';
 import { ClinicalEvolution } from './Clinical/ClinicalEvolution';
 import { BudgetManager } from './Clinical/BudgetManager';
 
-export const PatientDetail = ({ patient, onBack }: { patient: any, onBack: () => void }) => {
-  const [activeTab, setActiveTab] = useState('clinical'); // clinical, budget, gallery, consent
+export const PatientDetail = ({ 
+  patient, 
+  onBack, 
+  defaultTab = 'clinical', 
+  autoAddNew = false 
+}: { 
+  patient: any, 
+  onBack: () => void, 
+  defaultTab?: string, 
+  autoAddNew?: boolean 
+}) => {
+  const [activeTab, setActiveTab] = useState(defaultTab); // clinical, budget, gallery, consent
   const [locationFilter, setLocationFilter] = useState<'all' | 'clinic' | 'delivery'>('all');
 
 
@@ -71,7 +81,7 @@ export const PatientDetail = ({ patient, onBack }: { patient: any, onBack: () =>
 
       {activeTab === 'evolution' && (
         <div style={{ padding: '1rem' }}>
-          <ClinicalEvolution patientId={patient.id} />
+          <ClinicalEvolution patientId={patient.id} autoAddNew={autoAddNew} />
         </div>
       )}
 

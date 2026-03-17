@@ -30,14 +30,6 @@ const Dashboard = ({ profile }: { profile: any }) => (
       </div>
     </header>
     
-    <div className="card" style={{ background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A1A 100%)', borderLeft: '5px solid var(--primary)' }}>
-      <h3 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', opacity: 0.8 }}>Ingresos Estimados (Mes)</h3>
-      <p style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-gold)' }}>12.450.000 <span style={{ fontSize: '1rem' }}>PYG</span></p>
-      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-        <span className="badge badge-clinic">24 CITAS CLÍNICA</span>
-        <span className="badge badge-delivery">12 CITAS DELIVERY</span>
-      </div>
-    </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
         <NavLink to="/new-appointment" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -73,10 +65,18 @@ const PatientsPage = () => {
   const location = useLocation();
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
+  const [autoAddNew, setAutoAddNew] = useState(false);
 
   useEffect(() => {
-    const state = location.state as { selectedPatientId?: string };
+    const state = location.state as { 
+      selectedPatientId?: string, 
+      autoOpenTab?: string,
+      autoAddNew?: boolean 
+    };
     if (state?.selectedPatientId) {
+      if (state.autoOpenTab) setInitialTab(state.autoOpenTab);
+      if (state.autoAddNew) setAutoAddNew(state.autoAddNew);
       fetchPatient(state.selectedPatientId);
       // Clear state so it doesn't re-trigger on refresh/back
       navigate(location.pathname, { replace: true, state: {} });
@@ -93,7 +93,18 @@ const PatientsPage = () => {
   if (loading) return <LoadingScreen />;
 
   if (selectedPatient) {
-    return <PatientDetail patient={selectedPatient} onBack={() => setSelectedPatient(null)} />;
+    return (
+      <PatientDetail 
+        patient={selectedPatient} 
+        onBack={() => {
+          setSelectedPatient(null);
+          setInitialTab(undefined);
+          setAutoAddNew(false);
+        }} 
+        defaultTab={initialTab}
+        autoAddNew={autoAddNew}
+      />
+    );
   }
 
   return (
@@ -107,7 +118,7 @@ const PatientsPage = () => {
 
 const Agenda = () => <HybridAgenda />;
 const Finance = () => <Financials />;
-const Ops = () => <Operations />;
+const Ops = ({ profile }: { profile: any }) => <Operations profile={profile} />;
 
 const LoadingScreen = () => (
   <div className="auth-container">
@@ -202,7 +213,7 @@ const App = () => {
           <Route path="/patients" element={<PatientsPage />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route path="/finance" element={<Finance />} />
-          <Route path="/ops" element={<Ops />} />
+          <Route path="/ops" element={<Ops profile={profile} />} />
           <Route 
             path="/access" 
             element={profile?.is_admin ? <AccessManagement /> : <Navigate to="/" />} 

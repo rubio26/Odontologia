@@ -1,8 +1,10 @@
-import { MapPin, Clock, ExternalLink, Calendar as CalendarIcon, Phone } from 'lucide-react';
+import { MapPin, Clock, ExternalLink, Calendar as CalendarIcon, Phone, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const mockAppointments = [
   {
     id: 1,
+    patient_id: 'd9b7a4c0-2f1a-4d3b-9c8e-5b1a2d3c4e5f', // Placeholder for actual ID
     patient_name: 'Juan Pérez',
     type: 'delivery',
     time: '14:00',
@@ -12,6 +14,7 @@ const mockAppointments = [
   },
   {
     id: 2,
+    patient_id: 'f1e2d3c4-b5a6-4c7d-8e9f-0a1b2c3d4e5f', // Placeholder for actual ID
     patient_name: 'Maria Rossi',
     type: 'clinic',
     time: '16:00',
@@ -21,6 +24,8 @@ const mockAppointments = [
 ];
 
 export const HybridAgenda = () => {
+  const navigate = useNavigate();
+
   return (
     <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -71,6 +76,19 @@ export const HybridAgenda = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.6rem' }}>
+                  <button 
+                    className="btn btn-primary" 
+                    style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    onClick={() => navigate('/patients', { 
+                      state: { 
+                        selectedPatientId: apt.patient_id,
+                        autoOpenTab: 'evolution',
+                        autoAddNew: true
+                      } 
+                    })}
+                  >
+                    <CheckCircle2 size={16} /> Confirmar Llegada
+                  </button>
                   <button className="btn btn-outline" style={{ padding: '0.5rem' }} onClick={() => window.open(`tel:${apt.phone}`)}>
                     <Phone size={18} />
                   </button>
