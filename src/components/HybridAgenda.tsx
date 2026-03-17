@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Clock, ExternalLink, Calendar as CalendarIcon, Phone, CheckCircle2, Loader2 } from 'lucide-react';
+import { MapPin, Clock, Calendar as CalendarIcon, Phone, CheckCircle2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
