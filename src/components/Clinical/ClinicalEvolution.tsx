@@ -195,10 +195,16 @@ export const ClinicalEvolution = ({
             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Procedimiento / Notas</label>
             <textarea 
               className="input-field" 
-              rows={3} 
+              rows={6} 
               value={newNote.procedure_notes} 
               onChange={e => setNewNote({...newNote, procedure_notes: e.target.value})}
               placeholder="Ej: Instrumentación a 21mm, Medicación..."
+              style={{ 
+                backgroundColor: 'var(--bg-dark)', 
+                color: 'white', 
+                fontSize: '1rem',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }}
               required
             />
           </div>
