@@ -177,10 +177,9 @@ export const ClinicalEvolution = ({
             </div>
           </div>
 
-          <div className="input-group" style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Vincular a Presupuesto</label>
+          <div className="input-group-vertical" style={{ marginBottom: '1.2rem' }}>
+            <label style={{ fontSize: '0.75rem', color: 'var(--text-gold)', marginBottom: '0.4rem' }}>Vincular a Presupuesto</label>
             <select 
-              className="input-field" 
               value={newNote.budget_id}
               onChange={e => setNewNote({...newNote, budget_id: e.target.value})}
             >
@@ -191,20 +190,13 @@ export const ClinicalEvolution = ({
             </select>
           </div>
 
-          <div className="input-group" style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Procedimiento / Notas</label>
+          <div className="input-group-vertical" style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontSize: '0.75rem', color: 'var(--text-gold)', marginBottom: '0.4rem' }}>Procedimiento / Notas</label>
             <textarea 
-              className="input-field" 
-              rows={6} 
+              rows={8} 
               value={newNote.procedure_notes} 
               onChange={e => setNewNote({...newNote, procedure_notes: e.target.value})}
               placeholder="Ej: Instrumentación a 21mm, Medicación..."
-              style={{ 
-                backgroundColor: 'var(--bg-dark)', 
-                color: 'white', 
-                fontSize: '1rem',
-                border: '1px solid rgba(255,255,255,0.1)'
-              }}
               required
             />
           </div>
