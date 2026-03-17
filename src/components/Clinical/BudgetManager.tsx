@@ -98,6 +98,61 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
     setSaving(false);
   };
 
+  const handlePrint = (budget: Budget) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const itemsHtml = budget.items.map(item => `
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+        <span>${item.description}</span>
+        <span style="font-weight: bold;">${item.price.toLocaleString()} PYG</span>
+      </div>
+    `).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Presupuesto - Lumini Dental Studio</title>
+          <style>
+            body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; }
+            .header { text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo { font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #D4AF37; }
+            .patient-info { margin-bottom: 30px; }
+            .total { margin-top: 30px; text-align: right; font-size: 20px; color: #D4AF37; font-weight: bold; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">LUMINI DENTAL STUDIO</div>
+            <p>Presupuesto de Tratamiento</p>
+          </div>
+          <div class="patient-info">
+            <p><strong>Paciente:</strong> ${patientName}</p>
+            <p><strong>Fecha:</strong> ${new Date(budget.created_at).toLocaleDateString()}</p>
+            <p><strong>Plan:</strong> ${budget.description}</p>
+          </div>
+          <div class="items">
+            ${itemsHtml}
+          </div>
+          <div class="total">
+            Total Estimado: ${budget.total_cost.toLocaleString()} PYG
+          </div>
+          <p style="margin-top: 50px; font-size: 12px; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
+            Este presupuesto tiene una validez de 15 días. Las sesiones son estimadas y pueden variar según la evolución clínica.
+          </p>
+          <script>
+            window.onload = () => {
+              window.print();
+              // window.close();
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const shareViaWhatsApp = (budget: Budget) => {
     const itemsText = budget.items.map(item => `- ${item.description}: ${item.price.toLocaleString()} PYG`).join('\n');
     const text = `Hola ${patientName}, adjunto el presupuesto detallado de su tratamiento dental:\n\n*${budget.description}*\n${itemsText}\n\n*Total:* ${budget.total_cost.toLocaleString()} PYG\n*Sesiones estimadas:* ${budget.num_sessions}\n\nQuedamos a las órdenes para agendar su primera sesión.`;
@@ -240,7 +295,11 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
                 >
                   <MessageCircle size={16} /> WhatsApp
                 </button>
-                <button className="btn glass" style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem' }}>
+                <button 
+                  className="btn glass" 
+                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem' }}
+                  onClick={() => handlePrint(budget)}
+                >
                   <FileText size={16} /> PDF
                 </button>
               </div>
