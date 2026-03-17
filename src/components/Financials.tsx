@@ -1,16 +1,48 @@
-import { useState } from 'react';
-import { DollarSign, TrendingUp, Wallet, ArrowRightLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, TrendingUp, Wallet, ArrowRightLeft, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export const Financials = () => {
-  const exchangeRate = 7450; // PYG/USD
+  const [exchangeRate, setExchangeRate] = useState(7450);
   const [costPYG, setCostPYG] = useState(115000);
   const [pricePYG, setPricePYG] = useState(350000);
   const [commissionPercent, setCommissionPercent] = useState(20);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('settings')
+        .select('*')
+        .in('key', ['exchange_rate', 'default_commission']);
+      
+      if (data) {
+        data.forEach(s => {
+          if (s.key === 'exchange_rate') setExchangeRate(s.value.rate);
+          if (s.key === 'default_commission') setCommissionPercent(s.value.percent);
+        });
+      }
+    } catch (err) {
+      console.error('Error loading financial settings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const materialsPYG = costPYG;
   const costUSD = costPYG / exchangeRate;
   const commissionPYG = (pricePYG * commissionPercent) / 100;
   const netUtility = pricePYG - materialsPYG - commissionPYG;
+
+  if (loading) return (
+    <div style={{ padding: '4rem', textAlign: 'center' }}>
+      <Loader2 className="animate-spin" size={32} color="var(--primary)" />
+    </div>
+  );
 
   return (
     <div style={{ padding: '1rem', paddingBottom: '6rem' }}>
@@ -18,7 +50,7 @@ export const Financials = () => {
         <h2>Finanzas Boutique</h2>
         <div className="badge badge-delivery">
           <ArrowRightLeft size={12} style={{ marginRight: '0.4rem' }} />
-          1 USD ≈ 7.450 PYG
+          1 USD ≈ {exchangeRate.toLocaleString()} PYG
         </div>
       </div>
 

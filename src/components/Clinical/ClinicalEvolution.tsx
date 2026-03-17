@@ -193,11 +193,22 @@ export const ClinicalEvolution = ({
           <div className="input-group-vertical" style={{ marginBottom: '1.5rem' }}>
             <label style={{ fontSize: '0.75rem', color: 'var(--text-gold)', marginBottom: '0.4rem' }}>Procedimiento / Notas</label>
             <textarea 
-              rows={8} 
+              rows={12} 
               value={newNote.procedure_notes} 
               onChange={e => setNewNote({...newNote, procedure_notes: e.target.value})}
-              placeholder="Ej: Instrumentación a 21mm, Medicación..."
+              placeholder="Ej: Instrumentación a 21mm, Medicación, Re-evaluación..."
               required
+              style={{ 
+                background: 'var(--bg-dark)', 
+                color: 'white', 
+                border: '1px solid var(--border-luxury)',
+                borderRadius: '8px',
+                padding: '1rem',
+                fontSize: '1rem',
+                width: '100%',
+                resize: 'vertical',
+                marginTop: '0.4rem'
+              }}
             />
           </div>
 
