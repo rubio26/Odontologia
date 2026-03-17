@@ -74,20 +74,33 @@ const PatientsPage = () => {
       autoOpenTab?: string,
       autoAddNew?: boolean 
     };
+
     if (state?.selectedPatientId) {
+      // Set the flags and fetch
       if (state.autoOpenTab) setInitialTab(state.autoOpenTab);
       if (state.autoAddNew) setAutoAddNew(state.autoAddNew);
-      fetchPatient(state.selectedPatientId);
-      // Clear state so it doesn't re-trigger on refresh/back
+      
+      const patientId = state.selectedPatientId;
+      
+      // Clean state immediately so it doesn't re-trigger
       navigate(location.pathname, { replace: true, state: {} });
+      
+      fetchPatient(patientId);
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const fetchPatient = async (id: string) => {
     setLoading(true);
-    const { data } = await supabase.from('patients').select('*').eq('id', id).single();
-    if (data) setSelectedPatient(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from('patients').select('*').eq('id', id).single();
+      if (error) throw error;
+      if (data) setSelectedPatient(data);
+    } catch (err) {
+      console.error('Error fetching patient:', err);
+      // Optional: notification to user
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <LoadingScreen />;
