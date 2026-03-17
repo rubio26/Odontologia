@@ -87,7 +87,7 @@ export const PatientDetail = ({
 
       {activeTab === 'gallery' && (
         <div style={{ padding: '1rem' }}>
-          <PhotoGallery />
+          <PhotoGallery patientId={patient.id} />
         </div>
       )}
 

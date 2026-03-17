@@ -1,48 +1,125 @@
-import { useState, useRef } from 'react';
-import { Camera, Grid, Maximize2, Share2, MousePointer2, FileSearch, Trash2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Camera, Grid, Maximize2, Share2, MousePointer2, FileSearch, Trash2, Loader2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
-export const PhotoGallery = () => {
+export const PhotoGallery = ({ patientId }: { patientId: string }) => {
   const [view, setView] = useState<'grid' | 'compare'>('grid');
   const [category, setCategory] = useState<'photos' | 'xrays'>('photos');
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [photos, setPhotos] = useState([
-    { id: 1, type: 'Antes', url: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=400&q=80' },
-    { id: 2, type: 'Después', url: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=400&q=80' }
-  ]);
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [xrays, setXrays] = useState<any[]>([]);
 
-  const [xrays, setXrays] = useState([
-    { id: 1, type: 'Panorámica', url: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=400&q=80' },
-    { id: 2, type: 'Periapical', url: 'https://images.unsplash.com/photo-1576091160550-217359f4268a?w=400&q=80' }
-  ]);
+  useEffect(() => {
+    fetchImages();
+  }, [patientId]);
+
+  const fetchImages = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('patient_images')
+        .select('*')
+        .eq('patient_id', patientId);
+
+      if (error) throw error;
+      if (data) {
+        setPhotos(data.filter(i => i.category === 'photos'));
+        setXrays(data.filter(i => i.category === 'xrays'));
+      }
+    } catch (err) {
+      console.error('Error fetching images:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // 1. Subir al Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${patientId}/${category}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('patient-media')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('patient-media')
+        .getPublicUrl(fileName);
+
+      // 3. Guardar en la tabla
+      const { data, error: dbError } = await supabase
+        .from('patient_images')
+        .insert({
+          patient_id: patientId,
+          url: publicUrl,
+          category,
+          type: category === 'photos' ? 'Nueva Foto' : 'Nueva Placa'
+        })
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      if (category === 'photos') {
+        setPhotos([...photos, data]);
+      } else {
+        setXrays([...xrays, data]);
+      }
+    } catch (err) {
+      console.error('Error uploading:', err);
+      alert('Error al cargar la imagen. Asegúrate de que el bucket "patient-media" existe en tu Supabase.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeHandle = async (id: string, url: string) => {
+    if (!confirm('¿Estás seguro de eliminar esta imagen?')) return;
+
+    try {
+      // Intentar extraer el path relativo del URL para borrar del storage
+      // Formato esperado: .../public/patient-media/patientId/category/filename.ext
+      const pathParts = url.split('patient-media/');
+      if (pathParts.length > 1) {
+        const filePath = pathParts[1];
+        await supabase.storage.from('patient-media').remove([filePath]);
+      }
+
+      const { error } = await supabase
+        .from('patient_images')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      if (category === 'photos') {
+        setPhotos(photos.filter(p => p.id !== id));
+      } else {
+        setXrays(xrays.filter(x => x.id !== id));
+      }
+    } catch (err) {
+      console.error('Error removing:', err);
+    }
+  };
 
   const currentItems = category === 'photos' ? photos : xrays;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      const newItem = {
-        id: Date.now(),
-        type: category === 'photos' ? 'Nueva Foto' : 'Nueva Placa',
-        url
-      };
-
-      if (category === 'photos') {
-        setPhotos([...photos, newItem]);
-      } else {
-        setXrays([...xrays, newItem]);
-      }
-    }
-  };
-
-  const removeHandle = (id: number) => {
-    if (category === 'photos') {
-      setPhotos(photos.filter(p => p.id !== id));
-    } else {
-      setXrays(xrays.filter(x => x.id !== id));
-    }
-  };
+  if (loading) return (
+    <div style={{ padding: '2rem', textAlign: 'center' }}>
+      <Loader2 className="animate-spin" size={32} color="var(--primary)" />
+    </div>
+  );
 
   return (
     <div style={{ marginTop: '1rem' }}>
@@ -92,7 +169,7 @@ export const PhotoGallery = () => {
                 <span className="badge badge-delivery" style={{ fontSize: '0.6rem' }}>{p.type}</span>
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
                   <button className="btn" style={{ padding: '0.2rem', color: 'var(--primary)' }}><Share2 size={14} /></button>
-                  <button className="btn" style={{ padding: '0.2rem', color: 'var(--error)' }} onClick={() => removeHandle(p.id)}><Trash2 size={14} /></button>
+                  <button className="btn" style={{ padding: '0.2rem', color: 'var(--error)' }} onClick={() => removeHandle(p.id, p.url)}><Trash2 size={14} /></button>
                 </div>
               </div>
             </div>
@@ -100,17 +177,31 @@ export const PhotoGallery = () => {
           <div 
             className="card glass" 
             style={{ height: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', borderStyle: 'dashed', cursor: 'pointer' }}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => !uploading && fileInputRef.current?.click()}
           >
-             {category === 'photos' ? <Camera size={24} color="var(--primary)" /> : <FileSearch size={24} color="var(--primary)" />}
-             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cargar {category === 'photos' ? 'Foto' : 'Placa'}</span>
+             {uploading ? (
+               <Loader2 className="animate-spin" size={24} color="var(--primary)" />
+             ) : (
+               category === 'photos' ? <Camera size={24} color="var(--primary)" /> : <FileSearch size={24} color="var(--primary)" />
+             )}
+             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+               {uploading ? 'Cargando...' : `Cargar ${category === 'photos' ? 'Foto' : 'Placa'}`}
+             </span>
           </div>
         </div>
       ) : (
         <div className="card glass" style={{ position: 'relative' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px', background: 'var(--primary)' }}>
-            <img src={currentItems[0].url} style={{ width: '100%', height: '250px', objectFit: 'cover' }} />
-            <img src={currentItems[1].url} style={{ width: '100%', height: '250px', objectFit: 'cover' }} />
+            {currentItems.length >= 2 ? (
+              <>
+                <img src={currentItems[0].url} style={{ width: '100%', height: '250px', objectFit: 'cover' }} />
+                <img src={currentItems[1].url} style={{ width: '100%', height: '250px', objectFit: 'cover' }} />
+              </>
+            ) : (
+              <div style={{ gridColumn: 'span 2', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                Se necesitan al menos 2 imágenes para comparar.
+              </div>
+            )}
           </div>
           <div style={{ position: 'absolute', bottom: '10px', right: '10px' }}>
             <button className="btn btn-primary" style={{ padding: '0.5rem' }}>
