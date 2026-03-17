@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera, Grid, Maximize2, Share2, MousePointer2, FileSearch, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -7,8 +7,6 @@ export const PhotoGallery = ({ patientId }: { patientId: string }) => {
   const [category, setCategory] = useState<'photos' | 'xrays'>('photos');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [photos, setPhotos] = useState<any[]>([]);
   const [xrays, setXrays] = useState<any[]>([]);
 
@@ -81,6 +79,7 @@ export const PhotoGallery = ({ patientId }: { patientId: string }) => {
       alert('Error al cargar la imagen. Asegúrate de que el bucket "patient-media" existe en tu Supabase.');
     } finally {
       setUploading(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -123,13 +122,6 @@ export const PhotoGallery = ({ patientId }: { patientId: string }) => {
 
   return (
     <div style={{ marginTop: '1rem' }}>
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        style={{ display: 'none' }} 
-        accept="image/*" 
-        onChange={handleFileChange}
-      />
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
         <button 
@@ -174,20 +166,38 @@ export const PhotoGallery = ({ patientId }: { patientId: string }) => {
               </div>
             </div>
           ))}
-          <div 
+
+          <label 
             className="card glass" 
-            style={{ height: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', borderStyle: 'dashed', cursor: 'pointer' }}
-            onClick={() => !uploading && fileInputRef.current?.click()}
+            style={{ 
+              height: '150px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              borderStyle: 'dashed', 
+              cursor: uploading ? 'wait' : 'pointer',
+              borderColor: 'var(--primary)',
+              opacity: uploading ? 0.7 : 1
+            }}
           >
-             {uploading ? (
-               <Loader2 className="animate-spin" size={24} color="var(--primary)" />
-             ) : (
-               category === 'photos' ? <Camera size={24} color="var(--primary)" /> : <FileSearch size={24} color="var(--primary)" />
-             )}
-             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-               {uploading ? 'Cargando...' : `Cargar ${category === 'photos' ? 'Foto' : 'Placa'}`}
-             </span>
-          </div>
+            <input 
+              type="file" 
+              style={{ display: 'none' }} 
+              accept="image/*" 
+              onChange={handleFileChange}
+              disabled={uploading}
+            />
+            {uploading ? (
+              <Loader2 className="animate-spin" size={24} color="var(--primary)" />
+            ) : (
+              category === 'photos' ? <Camera size={24} color="var(--primary)" /> : <FileSearch size={24} color="var(--primary)" />
+            )}
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              {uploading ? 'Cargando...' : `Cargar ${category === 'photos' ? 'Foto' : 'Placa'}`}
+            </span>
+          </label>
         </div>
       ) : (
         <div className="card glass" style={{ position: 'relative' }}>
