@@ -225,6 +225,8 @@ DROP POLICY IF EXISTS "Profiles Self Manage" ON profiles;
 CREATE POLICY "Profiles Self Manage" ON profiles FOR ALL USING (id = auth.uid());
 DROP POLICY IF EXISTS "Profiles Public Read" ON profiles;
 CREATE POLICY "Profiles Public Read" ON profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins Manage All Profiles" ON profiles;
+CREATE POLICY "Admins Manage All Profiles" ON profiles FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
 
 -- 11. Trigger para Perfiles Automáticos
 CREATE OR REPLACE FUNCTION public.handle_new_user()
