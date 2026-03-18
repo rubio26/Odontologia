@@ -155,6 +155,8 @@ const StatusScreen = ({ title, message, icon: Icon, color }: any) => (
   </div>
 );
 
+const ADMIN_EMAILS = ['dIportobr@gmail.com', 'diego@ejemplo.com', 'admin@odontologia.com'];
+
 const App = () => {
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -163,13 +165,13 @@ const App = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
+      if (session) fetchProfile(session.user.id, session.user.email);
       else setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
+      if (session) fetchProfile(session.user.id, session.user.email);
       else {
         setProfile(null);
         setLoading(false);
@@ -179,15 +181,34 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    setProfile(data);
-    setLoading(false);
+  const fetchProfile = async (userId: string, userEmail?: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      console.log('DEBUG: Cargando perfil para:', userEmail, data);
+
+      let finalProfile = data || { id: userId, email: userEmail, status: 'approved' };
+      
+      // Forzar admin si el correo está en la lista maestra
+      if (userEmail && ADMIN_EMAILS.some(e => e.toLowerCase() === userEmail.toLowerCase())) {
+        finalProfile.is_admin = true;
+        finalProfile.status = 'approved';
+      }
+
+      setProfile(finalProfile);
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      // Fallback básico para no bloquear al usuario
+      if (userEmail && ADMIN_EMAILS.some(e => e.toLowerCase() === userEmail.toLowerCase())) {
+        setProfile({ id: userId, email: userEmail, is_admin: true, status: 'approved' });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <LoadingScreen />;
