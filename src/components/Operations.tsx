@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Terminal, Droplets, CheckCircle2, History, FlaskConical, Lock, Wallet, EyeOff, Loader2 } from 'lucide-react';
+import { Terminal, Droplets, CheckCircle2, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export const Operations = ({ profile }: { profile: any }) => {
@@ -12,12 +12,16 @@ export const Operations = ({ profile }: { profile: any }) => {
   const [error, setError] = useState<string | null>(null);
 
   const [labOrders, setLabOrders] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
   const [recentLog, setRecentLog] = useState<any>(null);
   const [monthlyEarnings, setMonthlyEarnings] = useState(0);
 
   const [newClinic, setNewClinic] = useState({ name: '', address: '', phone: '' });
   const [isAddingClinic, setIsAddingClinic] = useState(false);
+
+  const [newLabOrder, setNewLabOrder] = useState({ patient_id: '', item_description: '', price: 0 });
+  const [isAddingLab, setIsAddingLab] = useState(false);
 
   useEffect(() => {
     fetchOperationsData();
@@ -69,6 +73,14 @@ export const Operations = ({ profile }: { profile: any }) => {
         .order('is_home', { ascending: false });
       
       if (clinicsData) setClinics(clinicsData);
+
+      // 5. Fetch Patients
+      const { data: patientsData } = await supabase
+        .from('patients')
+        .select('id, full_name')
+        .order('full_name');
+      
+      if (patientsData) setPatients(patientsData);
 
     } catch (err) {
       console.error('Error fetching operations data:', err);
@@ -139,6 +151,24 @@ export const Operations = ({ profile }: { profile: any }) => {
       setClinics(clinics.map(c => ({ ...c, is_home: c.id === id })));
     } catch (err: any) {
       alert('Error al marcar sede principal: ' + err.message);
+    }
+  };
+
+  const handleAddLabOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data, error } = await supabase
+        .from('lab_orders')
+        .insert([newLabOrder])
+        .select(`*, patients(full_name)`)
+        .single();
+
+      if (error) throw error;
+      setLabOrders([data, ...labOrders]);
+      setNewLabOrder({ patient_id: '', item_description: '', price: 0 });
+      setIsAddingLab(false);
+    } catch (err: any) {
+      alert('Error: ' + err.message);
     }
   };
 
@@ -234,9 +264,57 @@ export const Operations = ({ profile }: { profile: any }) => {
       </div>
 
       <div style={{ marginBottom: '2.5rem' }}>
-        <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <FlaskConical size={18} color="var(--primary)" /> Control de Laboratorio
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <FlaskConical size={18} color="var(--primary)" /> Control de Laboratorio
+          </h3>
+          <button 
+            className="btn btn-primary" 
+            style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', height: 'auto' }}
+            onClick={() => setIsAddingLab(!isAddingLab)}
+          >
+            {isAddingLab ? 'Cerrar' : '+ Añadir Pedido'}
+          </button>
+        </div>
+
+        {isAddingLab && (
+          <form className="card glass" onSubmit={handleAddLabOrder} style={{ marginBottom: '1.5rem' }}>
+            <div className="auth-form" style={{ gap: '0.8rem' }}>
+              <div className="input-group">
+                <User size={16} color="var(--primary)" />
+                <select 
+                  required
+                  value={newLabOrder.patient_id}
+                  onChange={e => setNewLabOrder({...newLabOrder, patient_id: e.target.value})}
+                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'white', padding: '0.8rem' }}
+                >
+                  <option value="" disabled style={{ background: '#111' }}>Seleccionar Paciente</option>
+                  {patients.map(p => <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.full_name}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <Terminal size={16} />
+                <input 
+                  placeholder="Descripción del trabajo (Ej: Corona Zirconio)" 
+                  value={newLabOrder.item_description} 
+                  onChange={e => setNewLabOrder({...newLabOrder, item_description: e.target.value})}
+                  required 
+                />
+              </div>
+              <div className="input-group">
+                <Wallet size={16} />
+                <input 
+                  type="number"
+                  placeholder="Precio Estimado (PYG)" 
+                  value={newLabOrder.price || ''} 
+                  onChange={e => setNewLabOrder({...newLabOrder, price: Number(e.target.value)})}
+                />
+              </div>
+              <button type="submit" className="btn btn-primary w-full">Guardar Pedido</button>
+            </div>
+          </form>
+        )}
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {labOrders.length === 0 ? (
             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center' }}>No hay pedidos activos.</p>
