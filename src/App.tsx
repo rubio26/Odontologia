@@ -83,7 +83,7 @@ const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
   </div>
 );
 
-const PatientsPage = () => {
+const PatientsPage = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
@@ -132,6 +132,7 @@ const PatientsPage = () => {
     return (
       <PatientDetail 
         patient={selectedPatient} 
+        doctorName={profile?.full_name}
         onBack={() => {
           setSelectedPatient(null);
           setInitialTab(undefined);
@@ -268,7 +269,7 @@ const App = () => {
           <Route path="/new-appointment" element={<NewAppointment />} />
           <Route path="/new-budget" element={<NewBudgetWizard />} />
           <Route path="/pending" element={<PendingTreatments />} />
-          <Route path="/patients" element={<PatientsPage />} />
+          <Route path="/patients" element={<PatientsPage profile={profile} />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route path="/finance" element={<Finance />} />
           <Route path="/ops" element={<Ops profile={profile} />} />

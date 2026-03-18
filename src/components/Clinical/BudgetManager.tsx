@@ -18,7 +18,7 @@ interface Budget {
   created_at: string;
 }
 
-export const BudgetManager = ({ patientId, patientName, patientPhone }: { patientId: string, patientName: string, patientPhone?: string }) => {
+export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName }: { patientId: string, patientName: string, patientPhone?: string, doctorName?: string }) => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -148,7 +148,10 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
         <body>
           <div class="container">
             <div class="header">
-              <div class="logo">LUMINI</div>
+              <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 10px;"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                LUMINI
+              </div>
               <div class="subtitle">Studio Dental Premium</div>
               <div class="doc-type">PRESUPUESTO DE TRATAMIENTO</div>
             </div>
@@ -165,8 +168,11 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
               <div><div class="total-label">Inversión Final Sugerida</div><div style="font-size: 11px; color: #636E72; margin-top: 5px;">${budget.num_sessions} ${budget.num_sessions === 1 ? 'Sesión' : 'Sesiones de tratamiento'}</div></div>
               <div class="total-amount">${budget.total_cost.toLocaleString()} PYG</div>
             </div>
-            <div class="footer"><p>Este documento es una cotización profesional sujeta a variaciones según respuesta clínica del paciente.</p><p style="margin-top: 10px; font-weight: 600; color: #D4AF37;">LUMINI STUDIO DENTAL • EXCELENCIA EN CADA DETALLE</p></div>
-          </div>
+            <div class="footer">
+              <p>Este documento es una cotización profesional sujeta a variaciones según respuesta clínica del paciente.</p>
+              <p style="margin-top: 15px; font-weight: 600; font-size: 13px; color: #1a1a1a;">Emitido por el ${doctorName || 'Dr. Encargado'}</p>
+              <p style="margin-top: 10px; font-weight: 600; color: #D4AF37;">LUMINI STUDIO DENTAL • EXCELENCIA EN CADA DETALLE</p>
+            </div>
           <script>window.onload = () => { window.print(); }</script>
         </body>
       </html>

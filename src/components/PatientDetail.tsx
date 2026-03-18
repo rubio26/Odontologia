@@ -23,11 +23,13 @@ import { ClinicalHistory } from './Clinical/ClinicalHistory';
 
 export const PatientDetail = ({ 
   patient, 
+  doctorName,
   onBack, 
   defaultTab = 'clinical', 
   autoAddNew = false 
 }: { 
   patient: any, 
+  doctorName?: string,
   onBack: () => void, 
   defaultTab?: string, 
   autoAddNew?: boolean 
@@ -223,6 +225,7 @@ export const PatientDetail = ({
             patientId={patient.id} 
             patientName={patient.full_name} 
             patientPhone={patient.phone} 
+            doctorName={doctorName}
           />
         </div>
       )}
