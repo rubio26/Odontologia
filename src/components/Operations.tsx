@@ -14,14 +14,16 @@ export const Operations = ({ profile }: { profile: any }) => {
   const [labOrders, setLabOrders] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
+  const [laboratories, setLaboratories] = useState<any[]>([]);
   const [recentLog, setRecentLog] = useState<any>(null);
   const [monthlyEarnings, setMonthlyEarnings] = useState(0);
 
-  const [newClinic, setNewClinic] = useState({ name: '', address: '', phone: '' });
-  const [isAddingClinic, setIsAddingClinic] = useState(false);
+  const [registryType, setRegistryType] = useState<'clinics' | 'labs'>('clinics');
+  const [newEntry, setNewEntry] = useState({ name: '', address: '', phone: '' });
+  const [isAddingEntry, setIsAddingEntry] = useState(false);
 
-  const [newLabOrder, setNewLabOrder] = useState({ patient_id: '', item_description: '', price: 0 });
-  const [isAddingLab, setIsAddingLab] = useState(false);
+  const [newLabOrder, setNewLabOrder] = useState({ patient_id: '', laboratory_id: '', item_description: '', price: 0 });
+  const [isAddingLabWork, setIsAddingLabWork] = useState(false);
 
   useEffect(() => {
     fetchOperationsData();
@@ -82,6 +84,14 @@ export const Operations = ({ profile }: { profile: any }) => {
       
       if (patientsData) setPatients(patientsData);
 
+      // 6. Fetch Laboratories
+      const { data: labsReg } = await supabase
+        .from('laboratories')
+        .select('*')
+        .order('name');
+      
+      if (labsReg) setLaboratories(labsReg);
+
     } catch (err) {
       console.error('Error fetching operations data:', err);
     } finally {
@@ -111,62 +121,70 @@ export const Operations = ({ profile }: { profile: any }) => {
       setLoadingAuth(false);
     }
   };
-  const handleAddClinic = async (e: React.FormEvent) => {
+  const handleAddEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const table = registryType === 'clinics' ? 'clinics' : 'laboratories';
+      const payload = registryType === 'clinics' 
+        ? { ...newEntry, is_home: clinics.length === 0 }
+        : newEntry;
+
       const { data, error } = await supabase
-        .from('clinics')
-        .insert([{ ...newClinic, is_home: clinics.length === 0 }])
+        .from(table)
+        .insert([payload])
         .select()
         .single();
 
       if (error) throw error;
-      setClinics([...clinics, data]);
-      setNewClinic({ name: '', address: '', phone: '' });
-      setIsAddingClinic(false);
+      
+      if (registryType === 'clinics') setClinics([...clinics, data]);
+      else setLaboratories([...laboratories, data]);
+
+      setNewEntry({ name: '', address: '', phone: '' });
+      setIsAddingEntry(false);
     } catch (err: any) {
-      alert('Error al añadir clinica: ' + err.message);
+      alert('Error: ' + err.message);
     }
   };
 
-  const handleDeleteClinic = async (id: string) => {
-    if (!confirm('¿Seguro que quieres eliminar esta sede?')) return;
+  const handleDeleteEntry = async (id: string, type: 'clinics' | 'labs') => {
+    if (!confirm('¿Seguro que quieres eliminar este registro?')) return;
     try {
-      const { error } = await supabase.from('clinics').delete().eq('id', id);
+      const table = type === 'clinics' ? 'clinics' : 'laboratories';
+      const { error } = await supabase.from(table).delete().eq('id', id);
       if (error) throw error;
-      setClinics(clinics.filter(c => c.id !== id));
+      
+      if (type === 'clinics') setClinics(clinics.filter(c => c.id !== id));
+      else setLaboratories(laboratories.filter(l => l.id !== id));
     } catch (err: any) {
-      alert('Error al eliminar: ' + err.message);
+      alert('Error: ' + err.message);
     }
   };
 
   const handleSetHome = async (id: string) => {
     try {
-      // 1. Quitar home de todos
       await supabase.from('clinics').update({ is_home: false }).eq('doctor_id', profile.id);
-      // 2. Poner home en el seleccionado
       const { error } = await supabase.from('clinics').update({ is_home: true }).eq('id', id);
-      
       if (error) throw error;
       setClinics(clinics.map(c => ({ ...c, is_home: c.id === id })));
     } catch (err: any) {
-      alert('Error al marcar sede principal: ' + err.message);
+      alert('Error: ' + err.message);
     }
   };
 
-  const handleAddLabOrder = async (e: React.FormEvent) => {
+  const handleAddLabWork = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const { data, error } = await supabase
         .from('lab_orders')
         .insert([newLabOrder])
-        .select(`*, patients(full_name)`)
+        .select(`*, patients(full_name), laboratories(name)`)
         .single();
 
       if (error) throw error;
       setLabOrders([data, ...labOrders]);
-      setNewLabOrder({ patient_id: '', item_description: '', price: 0 });
-      setIsAddingLab(false);
+      setNewLabOrder({ patient_id: '', laboratory_id: '', item_description: '', price: 0 });
+      setIsAddingLabWork(false);
     } catch (err: any) {
       alert('Error: ' + err.message);
     }
@@ -271,14 +289,14 @@ export const Operations = ({ profile }: { profile: any }) => {
           <button 
             className="btn btn-primary" 
             style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', height: 'auto' }}
-            onClick={() => setIsAddingLab(!isAddingLab)}
+            onClick={() => setIsAddingLabWork(!isAddingLabWork)}
           >
-            {isAddingLab ? 'Cerrar' : '+ Añadir Pedido'}
+            {isAddingLabWork ? 'Cerrar' : '+ Añadir Trabajo'}
           </button>
         </div>
 
-        {isAddingLab && (
-          <form className="card glass" onSubmit={handleAddLabOrder} style={{ marginBottom: '1.5rem' }}>
+        {isAddingLabWork && (
+          <form className="card glass" onSubmit={handleAddLabWork} style={{ marginBottom: '1.5rem' }}>
             <div className="auth-form" style={{ gap: '0.8rem' }}>
               <div className="input-group">
                 <User size={16} color="var(--primary)" />
@@ -293,38 +311,54 @@ export const Operations = ({ profile }: { profile: any }) => {
                 </select>
               </div>
               <div className="input-group">
-                <Terminal size={16} />
-                <input 
-                  placeholder="Descripción del trabajo (Ej: Corona Zirconio)" 
-                  value={newLabOrder.item_description} 
-                  onChange={e => setNewLabOrder({...newLabOrder, item_description: e.target.value})}
-                  required 
-                />
+                <FlaskConical size={16} color="var(--primary)" />
+                <select 
+                  required
+                  value={newLabOrder.laboratory_id}
+                  onChange={e => setNewLabOrder({...newLabOrder, laboratory_id: e.target.value})}
+                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'white', padding: '0.8rem' }}
+                >
+                  <option value="" style={{ background: '#111' }}>Seleccionar Laboratorio (Opcional)</option>
+                  {laboratories.map(l => <option key={l.id} value={l.id} style={{ background: '#111' }}>{l.name}</option>)}
+                </select>
               </div>
-              <div className="input-group">
-                <Wallet size={16} />
-                <input 
-                  type="number"
-                  placeholder="Precio Estimado (PYG)" 
-                  value={newLabOrder.price || ''} 
-                  onChange={e => setNewLabOrder({...newLabOrder, price: Number(e.target.value)})}
-                />
+              <div className="input-row">
+                <div className="input-group">
+                  <Terminal size={16} />
+                  <input 
+                    placeholder="Descripción (Ej: PPR)" 
+                    value={newLabOrder.item_description} 
+                    onChange={e => setNewLabOrder({...newLabOrder, item_description: e.target.value})}
+                    required 
+                  />
+                </div>
+                <div className="input-group">
+                  <Wallet size={16} />
+                  <input 
+                    type="number"
+                    placeholder="Precio" 
+                    value={newLabOrder.price || ''} 
+                    onChange={e => setNewLabOrder({...newLabOrder, price: Number(e.target.value)})}
+                  />
+                </div>
               </div>
-              <button type="submit" className="btn btn-primary w-full">Guardar Pedido</button>
+              <button type="submit" className="btn btn-primary w-full">Registrar Trabajo</button>
             </div>
           </form>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {labOrders.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center' }}>No hay pedidos activos.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center' }}>No hay trabajos activos.</p>
           ) : (
             labOrders.map(order => (
               <div key={order.id} className="card glass" style={{ borderLeft: '4px solid var(--primary)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{order.item_description}</p>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Paciente: {order.patients?.full_name}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {order.patients?.full_name} {order.laboratories ? `| ${order.laboratories.name}` : ''}
+                    </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <span className="badge badge-delivery" style={{ fontSize: '0.6rem' }}>{order.status}</span>
@@ -369,71 +403,106 @@ export const Operations = ({ profile }: { profile: any }) => {
         </div>
       </div>
 
-      {/* Gestión de Sedes / Consultorios */}
+      {/* Gestión Unificada de Registros (Sedes y Laboratorios) */}
       <div style={{ marginTop: '2.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <History size={18} color="var(--primary)" /> Mis Sedes y Consultorios
+            <History size={18} color="var(--primary)" /> Sedes, Consultorios y Laboratorios
           </h3>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.3rem', borderRadius: '12px' }}>
           <button 
-            className="btn btn-primary" 
-            style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', height: 'auto' }}
-            onClick={() => setIsAddingClinic(!isAddingClinic)}
+            className={`btn w-full ${registryType === 'clinics' ? 'btn-primary' : 'btn-outline'}`}
+            style={{ fontSize: '0.75rem', height: '35px' }}
+            onClick={() => setRegistryType('clinics')}
           >
-            {isAddingClinic ? 'Cerrar' : '+ Añadir'}
+            Mis Sedes
+          </button>
+          <button 
+            className={`btn w-full ${registryType === 'labs' ? 'btn-primary' : 'btn-outline'}`}
+            style={{ fontSize: '0.75rem', height: '35px' }}
+            onClick={() => setRegistryType('labs')}
+          >
+            Laboratorios
           </button>
         </div>
 
-        {isAddingClinic && (
-          <form className="card glass" onSubmit={handleAddClinic} style={{ marginBottom: '1.5rem' }}>
-            <div className="auth-form">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Lista de {registryType === 'clinics' ? 'sedes donde atiendes' : 'laboratorios de prótesis'}
+          </p>
+          <button 
+            className="btn btn-primary" 
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }}
+            onClick={() => setIsAddingEntry(!isAddingEntry)}
+          >
+            {isAddingEntry ? 'Cancelar' : `+ Nuevo ${registryType === 'clinics' ? 'Lugar' : 'Lab'}`}
+          </button>
+        </div>
+
+        {isAddingEntry && (
+          <form className="card glass" onSubmit={handleAddEntry} style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
+            <div className="auth-form" style={{ gap: '0.8rem' }}>
               <div className="input-group">
                 <Terminal size={16} />
                 <input 
-                  placeholder="Nombre de la Sede" 
-                  value={newClinic.name} 
-                  onChange={e => setNewClinic({...newClinic, name: e.target.value})}
+                  placeholder={`Nombre de ${registryType === 'clinics' ? 'la Sede' : 'el Laboratorio'}`} 
+                  value={newEntry.name} 
+                  onChange={e => setNewEntry({...newEntry, name: e.target.value})}
                   required 
+                />
+              </div>
+              <div className="input-group">
+                <User size={16} />
+                <input 
+                  placeholder="Número de Celular" 
+                  value={newEntry.phone} 
+                  onChange={e => setNewEntry({...newEntry, phone: e.target.value})}
                 />
               </div>
               <div className="input-group">
                 <FlaskConical size={16} />
                 <input 
-                  placeholder="Dirección" 
-                  value={newClinic.address} 
-                  onChange={e => setNewClinic({...newClinic, address: e.target.value})}
+                  placeholder="Dirección / Ubicación" 
+                  value={newEntry.address} 
+                  onChange={e => setNewEntry({...newEntry, address: e.target.value})}
                 />
               </div>
-              <button type="submit" className="btn btn-primary w-full">Guardar Sede</button>
+              <button type="submit" className="btn btn-primary w-full">Guardar Registro</button>
             </div>
           </form>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          {clinics.map(clinic => (
-            <div key={clinic.id} className="card glass" style={{ position: 'relative', borderLeft: clinic.is_home ? '4px solid var(--primary)' : '1px solid var(--border-luxury)' }}>
+          {(registryType === 'clinics' ? clinics : laboratories).map(item => (
+            <div key={item.id} className="card glass" style={{ 
+              position: 'relative', 
+              borderLeft: (registryType === 'clinics' && item.is_home) ? '4px solid var(--primary)' : '1px solid var(--border-luxury)' 
+            }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{clinic.name}</p>
-                    {clinic.is_home && <span className="badge badge-clinic">PRINCIPAL</span>}
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{item.name}</p>
+                    {registryType === 'clinics' && item.is_home && <span className="badge badge-clinic">PRINCIPAL</span>}
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{clinic.address}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    {item.phone && `📱 ${item.phone}`} {item.address && `| 📍 ${item.address}`}
+                  </p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {!clinic.is_home && (
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  {registryType === 'clinics' && !item.is_home && (
                     <button 
-                      onClick={() => handleSetHome(clinic.id)}
+                      onClick={() => handleSetHome(item.id)}
                       className="btn glass" 
-                      style={{ padding: '0.4rem', fontSize: '0.7rem' }}
-                      title="Marcar como Principal"
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.65rem' }}
                     >
-                      Set Home
+                      Home
                     </button>
                   )}
                   <button 
-                    onClick={() => handleDeleteClinic(clinic.id)}
-                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer' }}
+                    onClick={() => handleDeleteEntry(item.id, registryType)}
+                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '0.2rem' }}
                   >
                     <EyeOff size={16} />
                   </button>
@@ -441,8 +510,10 @@ export const Operations = ({ profile }: { profile: any }) => {
               </div>
             </div>
           ))}
-          {clinics.length === 0 && !isAddingClinic && (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No tienes sedes registradas.</p>
+          {(registryType === 'clinics' ? clinics : laboratories).length === 0 && (
+            <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>
+              <p style={{ fontSize: '0.8rem' }}>No hay registros de {registryType === 'clinics' ? 'sedes' : 'laboratorios'}.</p>
+            </div>
           )}
         </div>
       </div>

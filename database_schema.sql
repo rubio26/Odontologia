@@ -113,11 +113,22 @@ CREATE TABLE IF NOT EXISTS odontogram_history (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. Laboratorio
+-- 7. Registro de Laboratorios
+CREATE TABLE IF NOT EXISTS laboratories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    doctor_id UUID REFERENCES auth.users DEFAULT auth.uid(), -- AISLAMIENTO
+    name TEXT NOT NULL,
+    phone TEXT,
+    address TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7.1 Pedidos de Laboratorio
 CREATE TABLE IF NOT EXISTS lab_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     doctor_id UUID REFERENCES auth.users DEFAULT auth.uid(), -- AISLAMIENTO
     patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+    laboratory_id UUID REFERENCES laboratories(id) ON DELETE SET NULL, -- Referencia al laboratorio
     item_description TEXT NOT NULL,
     status TEXT DEFAULT 'Enviado',
     price NUMERIC DEFAULT 0,
@@ -177,6 +188,7 @@ ALTER TABLE odontogram_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lab_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sterilization_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE laboratories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE budgets ENABLE ROW LEVEL SECURITY;
 
@@ -213,6 +225,9 @@ CREATE POLICY "Private Access" ON transactions FOR ALL USING (doctor_id = auth.u
 
 DROP POLICY IF EXISTS "Private Access" ON sterilization_logs;
 CREATE POLICY "Private Access" ON sterilization_logs FOR ALL USING (doctor_id = auth.uid());
+
+DROP POLICY IF EXISTS "Private Access" ON laboratories;
+CREATE POLICY "Private Access" ON laboratories FOR ALL USING (doctor_id = auth.uid());
 
 -- Clínicas y Settings siguen siendo públicos o compartidos según elección
 DROP POLICY IF EXISTS "Private Access" ON clinics;
