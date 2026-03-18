@@ -42,6 +42,7 @@ export const HybridAgenda = () => {
           patients (id, full_name, phone),
           clinics (id, name, address)
         `)
+        .neq('status', 'cancelled')
         .gte('start_time', start.toISOString())
         .lt('start_time', dayAfter.toISOString())
         .order('start_time', { ascending: true });
@@ -70,6 +71,7 @@ export const HybridAgenda = () => {
       const { data } = await supabase
         .from('appointments')
         .select('start_time')
+        .neq('status', 'cancelled')
         .gte('start_time', firstDay)
         .lte('start_time', lastDay);
 
@@ -145,6 +147,7 @@ export const HybridAgenda = () => {
         setTomorrowApts(updater);
       }
       
+      await fetchMonthActivity(); // Refresh dots
       setConfirmingId(null);
       setShowOptionsId(null);
     } catch (err) {
