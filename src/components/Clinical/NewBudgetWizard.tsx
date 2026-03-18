@@ -135,32 +135,36 @@ export const NewBudgetWizard = () => {
           <div className="card glass" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
             <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Desglose de Tratamiento</h3>
             {items.map((item, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 40px', gap: '0.5rem', marginBottom: '0.8rem' }}>
-                <input 
-                  className="input-field" 
-                  placeholder="Procedimiento (ej: Resina Molar)" 
-                  value={item.description}
-                  onChange={e => updateItem(i, 'description', e.target.value)}
-                />
-                <input 
-                  type="number"
-                  className="input-field" 
-                  placeholder="Precio" 
-                  value={item.price}
-                  onChange={e => updateItem(i, 'price', e.target.value)}
-                />
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 40px', gap: '0.8rem', marginBottom: '1rem' }}>
+                <div className="input-group">
+                  <input 
+                    className="input-field" 
+                    placeholder="Procedimiento (ej: Resina Molar)" 
+                    value={item.description}
+                    onChange={e => updateItem(i, 'description', e.target.value)}
+                  />
+                </div>
+                <div className="input-group">
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    placeholder="Precio" 
+                    value={item.price}
+                    onChange={e => updateItem(i, 'price', e.target.value)}
+                  />
+                </div>
                 <button 
                   className="btn glass" 
-                  style={{ color: 'var(--error)', padding: '0' }}
+                  style={{ color: 'var(--error)', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   onClick={() => removeItem(i)}
                   disabled={items.length === 1}
                 ><Trash2 size={18} /></button>
               </div>
             ))}
-            <button className="btn btn-outline w-full" onClick={addItem} style={{ marginTop: '0.5rem' }}><Plus size={16} /> Agregar Procedimiento</button>
-            <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(212,175,55,0.1)', borderRadius: '10px', textAlign: 'right' }}>
-              <span style={{ fontSize: '0.9rem', marginRight: '1rem' }}>Total estimado:</span>
-              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-gold)' }}>{total.toLocaleString()} PYG</span>
+            <button className="btn btn-outline w-full" onClick={addItem} style={{ marginTop: '0.5rem', height: '45px' }}><Plus size={16} /> Agregar Procedimiento</button>
+            <div style={{ marginTop: '1.5rem', padding: '1.2rem', background: 'rgba(212,175,55,0.08)', borderRadius: '12px', textAlign: 'right', border: '1px solid rgba(212,175,55,0.1)' }}>
+              <span style={{ fontSize: '0.9rem', marginRight: '1rem', color: 'var(--text-muted)' }}>Total estimado:</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-gold)' }}>{total.toLocaleString()} PYG</span>
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -175,19 +179,20 @@ export const NewBudgetWizard = () => {
           <div className="card glass" style={{ padding: '2rem' }}>
             <h3 style={{ marginBottom: '1.5rem', textAlign: 'center' }}><CheckCircle size={32} color="var(--success)" style={{ display: 'block', margin: '0 auto 1rem' }} /> Resumen Final</h3>
             
-            <div className="input-group" style={{ marginBottom: '1.2rem' }}>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Título del Presupuesto / Plan</label>
+            <div className="input-group-vertical" style={{ marginBottom: '1.2rem' }}>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-gold)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Título del Presupuesto / Plan</label>
               <input 
                 className="input-field"
                 placeholder="Ej: Rehabilitación Estética Integral"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
+                style={{ padding: '0.5rem 0' }}
               />
             </div>
 
-            <div className="input-group" style={{ marginBottom: '2rem' }}>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cuotas / Sesiones sugeridas</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className="input-group-vertical" style={{ marginBottom: '2rem' }}>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-gold)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cuotas / Sesiones sugeridas</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
                 <Calculator size={20} color="var(--primary)" />
                 <input 
                   type="number"
@@ -195,6 +200,7 @@ export const NewBudgetWizard = () => {
                   min={1}
                   value={numSessions}
                   onChange={e => setNumSessions(Number(e.target.value))}
+                  style={{ padding: '0.5rem 0' }}
                 />
               </div>
             </div>
