@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Clock, Calendar as CalendarIcon, Phone, CheckCircle2, Loader2, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { MapPin, Clock, Calendar as CalendarIcon, Phone, CheckCircle2, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export const HybridAgenda = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewDate, setViewDate] = useState(new Date()); // For month navigation
   const [todayApts, setTodayApts] = useState<any[]>([]);
@@ -17,12 +16,10 @@ export const HybridAgenda = () => {
   }, [selectedDate, viewDate.getMonth(), viewDate.getFullYear()]);
 
   const fetchAllData = async () => {
-    setLoading(true);
     await Promise.all([
       fetchAppointments(),
       fetchMonthActivity()
     ]);
-    setLoading(false);
   };
 
   const fetchAppointments = async () => {
