@@ -72,11 +72,42 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
            data
          });
        }
-       alert('Mapa dental actualizado con éxito.');
+       return true;
     } catch (err: any) {
       alert('Error: ' + err.message);
+      return false;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleFinalize = async () => {
+    if (!window.confirm('¿Confirmas el fin del tratamiento? Se guardará el estado actual y se convertirán las caries en restauraciones realizadas.')) {
+      return;
+    }
+
+    setSaving(true);
+    const newData = { ...data };
+    
+    // Transformar estados
+    Object.keys(newData).forEach(toothId => {
+      const id = Number(toothId);
+      const surfaces = { ...newData[id] };
+      
+      Object.keys(surfaces).forEach(surface => {
+        if (surfaces[surface] === 'caries') surfaces[surface] = 'done';
+        if (surfaces[surface] === 'exodoncia') surfaces[surface] = 'absent';
+      });
+      
+      newData[id] = surfaces;
+    });
+
+    setData(newData);
+    
+    // Guardar el nuevo estado "limpio/finalizado"
+    const success = await handleSave();
+    if (success) {
+      alert('¡Felicidades! Tratamiento finalizado y archivado correctamente.');
     }
   };
 
@@ -124,12 +155,23 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
             <RotateCcw size={16} /> Limpiar
           </button>
           <button 
-            className="btn btn-primary" 
-            style={{ height: '40px' }}
-            onClick={handleSave}
+            className="btn btn-outline" 
+            style={{ height: '40px', borderColor: 'var(--success)', color: 'var(--success)' }}
+            onClick={handleFinalize}
             disabled={saving}
           >
-            {saving ? '...' : <><Save size={16} /> Guardar Mapa</>}
+            <ShieldCheck size={16} /> Finalizar Tratamiento
+          </button>
+          <button 
+            className="btn btn-primary" 
+            style={{ height: '40px' }}
+            onClick={async () => {
+              const success = await handleSave();
+              if (success) alert('Mapa dental actualizado con éxito.');
+            }}
+            disabled={saving}
+          >
+            {saving ? '...' : <><Save size={16} /> Guardar Cambios</>}
           </button>
         </div>
       </header>
