@@ -10,6 +10,8 @@ export const HybridAgenda = () => {
   const [todayApts, setTodayApts] = useState<any[]>([]);
   const [tomorrowApts, setTomorrowApts] = useState<any[]>([]);
   const [busyDays, setBusyDays] = useState<Set<string>>(new Set());
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [showOptionsId, setShowOptionsId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllData();
@@ -128,6 +130,21 @@ export const HybridAgenda = () => {
     );
   };
 
+  const updateAptStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase.from('appointments').update({ status }).eq('id', id);
+      if (error) throw error;
+      
+      const updater = (prev: any[]) => prev.map(a => a.id === id ? { ...a, status } : a);
+      setTodayApts(updater);
+      setTomorrowApts(updater);
+      setConfirmingId(null);
+      setShowOptionsId(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleWhatsApp = (apt: any, isToday: boolean) => {
     const patientName = apt.patients?.full_name || 'Paciente';
     const time = new Date(apt.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
@@ -152,33 +169,71 @@ export const HybridAgenda = () => {
     window.open(whatsappUrl, '_blank');
   };
 
-  const renderAptCard = (apt: any, isToday: boolean = true) => (
-    <div key={apt.id} className="apt-card glass" style={{ borderLeft: `3px solid ${apt.type === 'delivery' ? 'var(--primary)' : 'var(--success)'}` }}>
-      <div className="apt-info">
-        <div className="apt-time-row">
-          <Clock size={14} color="var(--primary)" />
-          <span className="apt-time">{new Date(apt.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} hs</span>
-          <span className={`badge ${apt.type === 'delivery' ? 'badge-delivery' : 'badge-clinic'}`}>{apt.type === 'delivery' ? 'D' : 'C'}</span>
+  const renderAptCard = (apt: any, isToday: boolean = true) => {
+    const isConfirmed = apt.status === 'confirmed';
+    const isCancelled = apt.status === 'cancelled';
+
+    return (
+      <div 
+        key={apt.id} 
+        className={`apt-card glass ${isConfirmed ? 'is-confirmed' : ''} ${isCancelled ? 'is-cancelled' : ''}`}
+        style={{ borderLeft: `3px solid ${apt.type === 'delivery' ? 'var(--primary)' : 'var(--success)'}` }}
+      >
+        <div className="apt-info">
+          <div className="apt-time-row">
+            <Clock size={14} color={isConfirmed ? 'black' : 'var(--primary)'} />
+            <span className="apt-time">{new Date(apt.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} hs</span>
+            <span className={`badge ${apt.type === 'delivery' ? 'badge-delivery' : 'badge-clinic'}`}>{apt.type === 'delivery' ? 'D' : 'C'}</span>
+          </div>
+          
+          <div className="relative">
+            <h4 
+              className={`apt-patient cursor-pointer hover:underline ${isConfirmed ? 'text-black' : 'text-gold'}`}
+              onClick={() => setConfirmingId(apt.id)}
+            >
+              {apt.patients?.full_name}
+            </h4>
+
+            {confirmingId === apt.id && (
+              <div className="confirm-bubble glass">
+                <p>¿Confirmó?</p>
+                <div className="flex gap-2 mt-2">
+                  <button className="confirm-btn si" onClick={() => updateAptStatus(apt.id, 'confirmed')}>SÍ</button>
+                  <button className="confirm-btn no" onClick={() => { setConfirmingId(null); setShowOptionsId(apt.id); }}>NO</button>
+                </div>
+              </div>
+            )}
+
+            {showOptionsId === apt.id && (
+              <div className="confirm-bubble options glass">
+                <button className="option-item" onClick={() => navigate('/new-appointment')}>Reagendar</button>
+                <button className="option-item text-error" onClick={() => updateAptStatus(apt.id, 'cancelled')}>Cancelar</button>
+                <button className="option-item close" onClick={() => setShowOptionsId(null)}>Cerrar</button>
+              </div>
+            )}
+          </div>
+
+          <div className="apt-meta">
+            <MapPin size={12} />
+            <span className={isConfirmed ? 'text-black opacity-70' : ''}>
+              {apt.type === 'clinic' ? apt.clinics?.name : (apt.clinics?.name || 'Delivery')}
+            </span>
+          </div>
         </div>
-        <h4 className="apt-patient text-gold">{apt.patients?.full_name}</h4>
-        <div className="apt-meta">
-          <MapPin size={12} />
-          <span>{apt.type === 'clinic' ? apt.clinics?.name : (apt.clinics?.name || 'Delivery')}</span>
+        <div className="apt-actions">
+          <button className={`btn ${isConfirmed ? 'btn-white' : 'btn-primary'} btn-icon`} title="Confirmar Llegada" onClick={() => navigate('/patients', { state: { selectedPatientId: apt.patient_id, autoOpenTab: 'evolution' } })}>
+            <CheckCircle2 size={16} />
+          </button>
+          <button className="btn btn-outline btn-icon" style={{ borderColor: isConfirmed ? 'rgba(0,0,0,0.2)' : '' }} title="WhatsApp" onClick={() => handleWhatsApp(apt, isToday)}>
+            <MessageCircle size={16} color={isConfirmed ? 'black' : 'var(--success)'} />
+          </button>
+          <button className="btn btn-outline btn-icon" style={{ borderColor: isConfirmed ? 'rgba(0,0,0,0.2)' : '' }} title="Llamar" onClick={() => window.open(`tel:${apt.patients?.phone}`)}>
+            <Phone size={16} color={isConfirmed ? 'black' : ''} />
+          </button>
         </div>
       </div>
-      <div className="apt-actions">
-        <button className="btn btn-primary btn-icon" title="Confirmar Llegada" onClick={() => navigate('/patients', { state: { selectedPatientId: apt.patient_id, autoOpenTab: 'evolution' } })}>
-          <CheckCircle2 size={16} />
-        </button>
-        <button className="btn btn-outline btn-icon" title="WhatsApp" onClick={() => handleWhatsApp(apt, isToday)}>
-          <MessageCircle size={16} color="var(--success)" />
-        </button>
-        <button className="btn btn-outline btn-icon" title="Llamar" onClick={() => window.open(`tel:${apt.patients?.phone}`)}>
-          <Phone size={16} />
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="agenda-wrapper h-full">
@@ -322,6 +377,74 @@ export const HybridAgenda = () => {
           font-style: italic;
           border-style: dashed;
           font-size: 0.85rem;
+        }
+        .is-confirmed {
+          background: var(--primary) !important;
+          border-left: none !important;
+        }
+        .is-confirmed .apt-patient {
+          color: black !important;
+          font-weight: 800;
+        }
+        .is-cancelled {
+          opacity: 0.4;
+          filter: grayscale(1);
+          pointer-events: none;
+        }
+        .is-cancelled .apt-patient {
+           text-decoration: line-through;
+        }
+        
+        .confirm-bubble {
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 50;
+          padding: 0.8rem;
+          border-radius: 12px;
+          min-width: 150px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+          animation: popIn 0.2s ease-out;
+        }
+        @keyframes popIn {
+          from { opacity: 0; transform: scale(0.9) translateY(10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .confirm-bubble p {
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+        .confirm-btn {
+          flex: 1;
+          padding: 0.4rem;
+          border-radius: 8px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+          border: none;
+        }
+        .confirm-btn.si { background: var(--primary); color: black; }
+        .confirm-btn.no { background: rgba(255,255,255,0.1); color: white; }
+        
+        .option-item {
+          display: block;
+          width: 100%;
+          text-align: left;
+          padding: 0.6rem;
+          font-size: 0.8rem;
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          border-radius: 6px;
+        }
+        .option-item:hover { background: rgba(255,255,255,0.05); }
+        .option-item.close { border-top: 1px solid rgba(255,255,255,0.1); margin-top: 0.3rem; opacity: 0.6; }
+
+        .btn-white {
+          background: white;
+          color: black;
+          border: none;
         }
         
         /* Calendar Styling */
