@@ -57,6 +57,9 @@ const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
           </div>
         </NavLink>
       </div>
+      <div style={{ marginTop: '2rem', fontSize: '0.7rem', opacity: 0.5, color: 'var(--text-muted)', textAlign: 'center' }}>
+        Identidad: {user?.email} | Admin: {profile?.is_admin ? 'SÍ' : 'NO'}
+      </div>
   </div>
 );
 
