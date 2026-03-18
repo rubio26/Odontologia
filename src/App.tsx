@@ -13,11 +13,11 @@ import { PendingTreatments } from './components/PendingTreatments.tsx';
 import { Auth } from './components/Auth/Auth';
 
 
-const Dashboard = ({ profile }: { profile: any }) => (
+const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
   <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
     <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div>
-        <h1 style={{ fontSize: '1.6rem' }}>Bienvenido, {profile?.full_name || 'Colega'} 👋</h1>
+        <h1 style={{ fontSize: '1.6rem' }}>Bienvenido, {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Colega'} 👋</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Estatus: Lumini Dental Studio</p>
       </div>
       <div 
@@ -220,7 +220,7 @@ const App = () => {
     <Router>
       <div className="app-container" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
         <Routes>
-          <Route path="/" element={<Dashboard profile={profile} />} />
+          <Route path="/" element={<Dashboard profile={profile} user={session?.user} />} />
           <Route path="/new-appointment" element={<NewAppointment />} />
           <Route path="/pending" element={<PendingTreatments />} />
           <Route path="/patients" element={<PatientsPage />} />
