@@ -19,6 +19,9 @@ export const NewAppointment = () => {
     notes: ''
   });
 
+  const [isNewPatient, setIsNewPatient] = useState(false);
+  const [newPatientData, setNewPatientData] = useState({ full_name: '', phone: '' });
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: patientsData } = await supabase.from('patients').select('id, full_name').order('full_name');
@@ -51,11 +54,34 @@ export const NewAppointment = () => {
     }
 
     try {
+      let patientId = formData.patient_id;
+
+      // Si es un paciente nuevo, registrarlo primero
+      if (isNewPatient) {
+        if (!newPatientData.full_name) {
+          alert('Por favor, ingresa el nombre del nuevo paciente.');
+          setLoading(false);
+          return;
+        }
+        const { data: patient, error: pError } = await supabase
+          .from('patients')
+          .insert([newPatientData])
+          .select()
+          .single();
+        
+        if (pError) throw pError;
+        patientId = patient.id;
+      } else if (!patientId) {
+        alert('Por favor, selecciona un paciente.');
+        setLoading(false);
+        return;
+      }
+
       const start_time = new Date(`${formData.date}T${formData.time}:00`).toISOString();
       const end_time = new Date(new Date(start_time).getTime() + 60 * 60 * 1000).toISOString();
 
       const { error } = await supabase.from('appointments').insert({
-        patient_id: formData.patient_id,
+        patient_id: patientId,
         clinic_id: formData.clinic_id || null,
         start_time,
         end_time,
@@ -107,20 +133,66 @@ export const NewAppointment = () => {
 
       <form onSubmit={handleSubmit}>
         <div className="card glass" style={{ padding: '2rem', borderTop: '4px solid var(--primary)' }}>
-          {/* Patient Selection */}
-          <div className="input-group" style={{ marginBottom: '1.5rem' }}>
-            <User size={18} />
-            <select 
-              required
-              className="input-field"
-              value={formData.patient_id}
-              onChange={e => setFormData({ ...formData, patient_id: e.target.value })}
-              style={{ width: '100%', padding: '0.8rem', background: 'transparent', color: 'white', border: 'none', appearance: 'none' }}
+          {/* Patient Selection Toggle */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.2rem', padding: '0.3rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+            <button 
+              type="button"
+              className={`btn w-full ${!isNewPatient ? 'btn-primary' : ''}`}
+              style={{ fontSize: '0.75rem', height: '35px', borderRadius: '10px' }}
+              onClick={() => setIsNewPatient(false)}
             >
-              <option value="" disabled style={{ background: '#111' }}>Seleccionar Paciente</option>
-              {patients.map(p => <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.full_name}</option>)}
-            </select>
+              Paciente Existente
+            </button>
+            <button 
+              type="button"
+              className={`btn w-full ${isNewPatient ? 'btn-primary' : ''}`}
+              style={{ fontSize: '0.75rem', height: '35px', borderRadius: '10px' }}
+              onClick={() => setIsNewPatient(true)}
+            >
+              + Nuevo Paciente
+            </button>
           </div>
+
+          {/* Patient Input Area */}
+          {!isNewPatient ? (
+            <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+              <User size={18} />
+              <select 
+                required={!isNewPatient}
+                className="input-field"
+                value={formData.patient_id}
+                onChange={e => setFormData({ ...formData, patient_id: e.target.value })}
+                style={{ width: '100%', padding: '0.8rem', background: 'transparent', color: 'white', border: 'none', appearance: 'none' }}
+              >
+                <option value="" disabled style={{ background: '#111' }}>Seleccionar Paciente</option>
+                {patients.map(p => (
+                  <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.full_name}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div style={{ animation: 'fadeIn 0.3s ease' }}>
+              <div className="input-group" style={{ marginBottom: '0.8rem' }}>
+                <User size={18} color="var(--success)" />
+                <input 
+                  required
+                  placeholder="Nombre Completo del Paciente" 
+                  className="input-field"
+                  value={newPatientData.full_name}
+                  onChange={e => setNewPatientData({ ...newPatientData, full_name: e.target.value })}
+                />
+              </div>
+              <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                <Clock size={18} color="var(--success)" />
+                <input 
+                  placeholder="Teléfono / Celular" 
+                  className="input-field"
+                  value={newPatientData.phone}
+                  onChange={e => setNewPatientData({ ...newPatientData, phone: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Date & Time Row */}
           <div className="input-row" style={{ marginBottom: '1.5rem' }}>

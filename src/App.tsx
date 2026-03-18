@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Users, Calendar, ClipboardList, Plus, FileSpreadsheet, ShieldCheck, LogOut, Clock, XCircle, Sparkles } from 'lucide-react';
+import { Users, Calendar, ClipboardList, FileSpreadsheet, ShieldCheck, LogOut, Clock, XCircle, Sparkles, UserPlus, FileText, FolderOpen } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { PatientSearch } from './components/PatientSearch';
 import { PatientDetail } from './components/PatientDetail';
@@ -15,48 +15,70 @@ import { Auth } from './components/Auth/Auth';
 
 const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
   <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
-    <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div>
-        <h1 style={{ fontSize: '1.6rem' }}>Bienvenido, {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Colega'} 👋</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Estatus: Lumini Dental Studio</p>
+        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, background: 'linear-gradient(to right, #D4AF37, #FFFFFF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          Hola, {profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Colega'}
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Central de Operaciones Lumini</p>
       </div>
       <div 
         className="glass" 
         style={{ width: '45px', height: '45px', borderRadius: '50%', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontWeight: 'bold', cursor: 'pointer' }}
-        onClick={() => supabase.auth.signOut()}
-        title="Cerrar Sesión"
+        onClick={() => { if(window.confirm('¿Cerrar sesión?')) supabase.auth.signOut(); }}
       >
         <LogOut size={18} />
       </div>
     </header>
     
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      <NavLink to="/new-appointment" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <div className="card glass" style={{ height: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '0.8rem', border: '1px solid rgba(212,175,55,0.3)' }}>
+          <div style={{ background: 'rgba(212, 175, 55, 0.15)', padding: '1rem', borderRadius: '20px' }}>
+            <Calendar color="var(--primary)" size={32} />
+          </div>
+          <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Nueva Cita</span>
+        </div>
+      </NavLink>
+      
+      <NavLink to="/patients" state={{ autoAddNew: true }} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <div className="card glass" style={{ height: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '0.8rem' }}>
+          <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '1rem', borderRadius: '20px' }}>
+            <UserPlus color="var(--success)" size={32} />
+          </div>
+          <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Nuevo Paciente</span>
+        </div>
+      </NavLink>
+    </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-        <NavLink to="/new-appointment" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
-            <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
-              <Plus color="var(--primary)" size={20} />
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Nueva Cita</span>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+      <NavLink to="/patients" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
+          <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
+            <FolderOpen color="var(--primary)" size={20} />
           </div>
-        </NavLink>
-        <NavLink to="/pending" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
-            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
-              <Clock color="#EF4444" size={20} />
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Pendientes</span>
+          <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Expediente</span>
+        </div>
+      </NavLink>
+
+      <NavLink to="/pending" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
+            <Clock color="#EF4444" size={20} />
           </div>
-        </NavLink>
-        <NavLink to="/patients" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
-            <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
-              <Users color="var(--primary)" size={20} />
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Expediente</span>
+          <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Pendientes</span>
+        </div>
+      </NavLink>
+
+      <NavLink to="/patients" state={{ autoOpenTab: 'budgets' }} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
+          <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
+            <FileText color="#8B5CF6" size={20} />
           </div>
-        </NavLink>
-      </div>
+          <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Presupuesto</span>
+        </div>
+      </NavLink>
+    </div>
   </div>
 );
 
