@@ -135,14 +135,30 @@ export const HybridAgenda = () => {
       const { error } = await supabase.from('appointments').update({ status }).eq('id', id);
       if (error) throw error;
       
-      const updater = (prev: any[]) => prev.map(a => a.id === id ? { ...a, status } : a);
-      setTodayApts(updater);
-      setTomorrowApts(updater);
+      if (status === 'cancelled') {
+        const filterer = (prev: any[]) => prev.filter(a => a.id !== id);
+        setTodayApts(filterer);
+        setTomorrowApts(filterer);
+      } else {
+        const updater = (prev: any[]) => prev.map(a => a.id === id ? { ...a, status } : a);
+        setTodayApts(updater);
+        setTomorrowApts(updater);
+      }
+      
       setConfirmingId(null);
       setShowOptionsId(null);
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleReschedule = async (id: string) => {
+    // Treat as cancelled locally to remove from view, then go to new appt
+    const filterer = (prev: any[]) => prev.filter(a => a.id !== id);
+    setTodayApts(filterer);
+    setTomorrowApts(filterer);
+    setShowOptionsId(null);
+    navigate('/new-appointment');
   };
 
   const handleWhatsApp = (apt: any, isToday: boolean) => {
@@ -215,7 +231,7 @@ export const HybridAgenda = () => {
 
         {showOptionsId === apt.id && (
           <div className="confirm-bubble options glass">
-            <button className="option-item" onClick={() => navigate('/new-appointment')}>Reagendar</button>
+            <button className="option-item" onClick={() => handleReschedule(apt.id)}>Reagendar</button>
             <button className="option-item text-error" onClick={() => updateAptStatus(apt.id, 'cancelled')}>Cancelar</button>
             <button className="option-item close" onClick={() => setShowOptionsId(null)}>Cerrar</button>
           </div>
@@ -442,6 +458,13 @@ export const HybridAgenda = () => {
         }
         .confirm-btn.si { background: var(--primary); color: black; }
         .confirm-btn.no { background: rgba(255,255,255,0.1); color: white; }
+
+        .is-confirmed .confirm-bubble {
+          background: #000 !important;
+          border-color: rgba(255,255,255,0.3);
+          box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+        }
+        .is-confirmed .confirm-bubble p { color: white !important; }
         
         .option-item {
           display: block;
