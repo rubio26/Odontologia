@@ -17,7 +17,7 @@ const Dashboard = ({ profile }: { profile: any }) => (
   <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
     <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div>
-        <h1 style={{ fontSize: '1.6rem' }}>Bienvenido, {profile?.preferred_name || 'Colega'} 👋</h1>
+        <h1 style={{ fontSize: '1.6rem' }}>Bienvenido, {profile?.preferred_name || profile?.full_name?.split(' ')[0] || 'Colega'} 👋</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Estatus: Lumini Dental Studio</p>
       </div>
       <div 
