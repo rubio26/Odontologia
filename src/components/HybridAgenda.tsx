@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Clock, Calendar as CalendarIcon, Phone, CheckCircle2, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { MapPin, Clock, Calendar as CalendarIcon, Phone, CheckCircle2, ChevronLeft, ChevronRight, User, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -128,7 +128,31 @@ export const HybridAgenda = () => {
     );
   };
 
-  const renderAptCard = (apt: any) => (
+  const handleWhatsApp = (apt: any, isToday: boolean) => {
+    const patientName = apt.patients?.full_name || 'Paciente';
+    const time = new Date(apt.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const location = apt.clinics?.name || 'el consultorio';
+    const phone = apt.patients?.phone;
+    
+    if (!phone) {
+      alert('El paciente no tiene número de teléfono registrado.');
+      return;
+    }
+
+    const emoji = "✨";
+    let message = "";
+    if (isToday) {
+      message = `${emoji} Hola ${patientName}, te recordamos tu cita de hoy a las ${time} hs en ${location}. ¿Podrás asistir? ${emoji}`;
+    } else {
+      message = `${emoji} Hola ${patientName}, te recordamos tu cita de mañana a las ${time} hs en ${location}. ¿Nos confirmas tu asistencia? ${emoji}`;
+    }
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const renderAptCard = (apt: any, isToday: boolean = true) => (
     <div key={apt.id} className="apt-card glass" style={{ borderLeft: `3px solid ${apt.type === 'delivery' ? 'var(--primary)' : 'var(--success)'}` }}>
       <div className="apt-info">
         <div className="apt-time-row">
@@ -139,14 +163,19 @@ export const HybridAgenda = () => {
         <h4 className="apt-patient text-gold">{apt.patients?.full_name}</h4>
         <div className="apt-meta">
           <MapPin size={12} />
-          <span>{apt.type === 'clinic' ? apt.clinics?.name : 'Delivery'}</span>
+          <span>{apt.type === 'clinic' ? apt.clinics?.name : (apt.clinics?.name || 'Delivery')}</span>
         </div>
       </div>
       <div className="apt-actions">
-        <button className="btn btn-primary btn-icon" onClick={() => navigate('/patients', { state: { selectedPatientId: apt.patient_id, autoOpenTab: 'evolution' } })}>
+        <button className="btn btn-primary btn-icon" title="Confirmar Llegada" onClick={() => navigate('/patients', { state: { selectedPatientId: apt.patient_id, autoOpenTab: 'evolution' } })}>
           <CheckCircle2 size={16} />
         </button>
-        <button className="btn btn-outline btn-icon" onClick={() => window.open(`tel:${apt.patients?.phone}`)}><Phone size={16} /></button>
+        <button className="btn btn-outline btn-icon" title="WhatsApp" onClick={() => handleWhatsApp(apt, isToday)}>
+          <MessageCircle size={16} color="var(--success)" />
+        </button>
+        <button className="btn btn-outline btn-icon" title="Llamar" onClick={() => window.open(`tel:${apt.patients?.phone}`)}>
+          <Phone size={16} />
+        </button>
       </div>
     </div>
   );
@@ -172,7 +201,7 @@ export const HybridAgenda = () => {
             {todayApts.length === 0 ? (
               <div className="empty-bucket glass">Cero agendas para hoy</div>
             ) : (
-              todayApts.map(renderAptCard)
+              todayApts.map(apt => renderAptCard(apt, true))
             )}
           </section>
 
@@ -186,7 +215,7 @@ export const HybridAgenda = () => {
             {tomorrowApts.length === 0 ? (
               <div className="empty-bucket glass op-50">Cero agendas para mañana</div>
             ) : (
-              tomorrowApts.map(renderAptCard)
+              tomorrowApts.map(apt => renderAptCard(apt, false))
             )}
           </section>
         </div>
