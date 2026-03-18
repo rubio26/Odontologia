@@ -1,23 +1,40 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Clock, Calendar as CalendarIcon, Phone, CheckCircle2, Loader2 } from 'lucide-react';
+import { MapPin, Clock, Calendar as CalendarIcon, Phone, CheckCircle2, Loader2, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export const HybridAgenda = () => {
   const navigate = useNavigate();
-  const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [viewDate, setViewDate] = useState(new Date()); // For month navigation
+  const [todayApts, setTodayApts] = useState<any[]>([]);
+  const [tomorrowApts, setTomorrowApts] = useState<any[]>([]);
+  const [busyDays, setBusyDays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchTodayAppointments();
-  }, []);
+    fetchAllData();
+  }, [selectedDate, viewDate.getMonth(), viewDate.getFullYear()]);
 
-  const fetchTodayAppointments = async () => {
+  const fetchAllData = async () => {
     setLoading(true);
+    await Promise.all([
+      fetchAppointments(),
+      fetchMonthActivity()
+    ]);
+    setLoading(false);
+  };
+
+  const fetchAppointments = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const startOfDay = `${today}T00:00:00.000Z`;
-      const endOfDay = `${today}T23:59:59.999Z`;
+      const start = new Date(selectedDate);
+      start.setHours(0, 0, 0, 0);
+      
+      const tomorrow = new Date(start);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const dayAfter = new Date(tomorrow);
+      dayAfter.setDate(dayAfter.getDate() + 1);
 
       const { data, error } = await supabase
         .from('appointments')
@@ -26,114 +43,329 @@ export const HybridAgenda = () => {
           patients (id, full_name, phone),
           clinics (id, name, address)
         `)
-        .gte('start_time', startOfDay)
-        .lte('start_time', endOfDay)
+        .gte('start_time', start.toISOString())
+        .lt('start_time', dayAfter.toISOString())
         .order('start_time', { ascending: true });
 
       if (error) throw error;
-      if (data) setAppointments(data);
+
+      if (data) {
+        const tPath = start.toISOString().split('T')[0];
+        const tmPath = tomorrow.toISOString().split('T')[0];
+        
+        setTodayApts(data.filter(a => a.start_time.startsWith(tPath)));
+        setTomorrowApts(data.filter(a => a.start_time.startsWith(tmPath)));
+      }
     } catch (err) {
-      console.error('Error fetching appointments:', err);
-    } finally {
-      setLoading(false);
+      console.error('Error:', err);
     }
   };
 
-  if (loading) return (
-    <div style={{ padding: '4rem', textAlign: 'center' }}>
-      <Loader2 className="animate-spin" size={32} color="var(--primary)" />
-      <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Cargando agenda del día...</p>
+  const fetchMonthActivity = async () => {
+    try {
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      const firstDay = new Date(year, month, 1).toISOString();
+      const lastDay = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+
+      const { data } = await supabase
+        .from('appointments')
+        .select('start_time')
+        .gte('start_time', firstDay)
+        .lte('start_time', lastDay);
+
+      if (data) {
+        const days = new Set(data.map(a => a.start_time.split('T')[0]));
+        setBusyDays(days);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const renderCalendar = () => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // Padding for first week
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`pad-${i}`} className="calendar-day empty"></div>);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const isSelected = selectedDate.toISOString().startsWith(dateStr);
+      const hasApts = busyDays.has(dateStr);
+
+      days.push(
+        <div 
+          key={d} 
+          className={`calendar-day ${isSelected ? 'selected' : ''}`}
+          onClick={() => setSelectedDate(new Date(year, month, d))}
+        >
+          <span className="day-number">{d}</span>
+          {hasApts && <div className="gold-dot"></div>}
+        </div>
+      );
+    }
+
+    return (
+      <div className="calendar-container card glass mt-4">
+        <header className="calendar-header">
+          <button className="btn glass p-2" onClick={() => setViewDate(new Date(year, month - 1, 1))}><ChevronLeft size={18} /></button>
+          <h3 className="text-gold">{monthNames[month]} {year}</h3>
+          <button className="btn glass p-2" onClick={() => setViewDate(new Date(year, month + 1, 1))}><ChevronRight size={18} /></button>
+        </header>
+        <div className="calendar-grid">
+          {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
+            <div key={day} className="calendar-weekday">{day}</div>
+          ))}
+          {days}
+        </div>
+      </div>
+    );
+  };
+
+  const renderAptCard = (apt: any) => (
+    <div key={apt.id} className="apt-card glass" style={{ borderLeft: `3px solid ${apt.type === 'delivery' ? 'var(--primary)' : 'var(--success)'}` }}>
+      <div className="apt-info">
+        <div className="apt-time-row">
+          <Clock size={14} color="var(--primary)" />
+          <span className="apt-time">{new Date(apt.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} hs</span>
+          <span className={`badge ${apt.type === 'delivery' ? 'badge-delivery' : 'badge-clinic'}`}>{apt.type === 'delivery' ? 'D' : 'C'}</span>
+        </div>
+        <h4 className="apt-patient text-gold">{apt.patients?.full_name}</h4>
+        <div className="apt-meta">
+          <MapPin size={12} />
+          <span>{apt.type === 'clinic' ? apt.clinics?.name : 'Delivery'}</span>
+        </div>
+      </div>
+      <div className="apt-actions">
+        <button className="btn btn-primary btn-icon" onClick={() => navigate('/patients', { state: { selectedPatientId: apt.patient_id, autoOpenTab: 'evolution' } })}>
+          <CheckCircle2 size={16} />
+        </button>
+        <button className="btn btn-outline btn-icon" onClick={() => window.open(`tel:${apt.patients?.phone}`)}><Phone size={16} /></button>
+      </div>
     </div>
   );
 
   return (
-    <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Agenda Híbrida</h2>
-        <div className="badge badge-delivery" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <CalendarIcon size={14} />
-          <span>{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+    <div className="agenda-wrapper h-full">
+      <header className="agenda-main-header">
+        <div className="flex items-center gap-4">
+           <div className="logo-sparkle glass"><CalendarIcon size={24} color="var(--primary)" /></div>
+           <h2 className="text-2xl font-bold tracking-wider">MI AGENDA <span className="text-gold">LUMINI</span></h2>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate('/new-appointment')}>+ Agendar Cita</button>
+      </header>
+
+      <div className="agenda-grid-container">
+        {/* Left Side: Daily & Tomorrow List */}
+        <div className="agenda-list-section custom-scrollbar">
+          <section className="day-bucket">
+            <div className="bucket-header">
+              <span className="bucket-title">HOY</span>
+              <span className="bucket-date">{selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</span>
+            </div>
+            {todayApts.length === 0 ? (
+              <div className="empty-bucket glass">Cero agendas para hoy</div>
+            ) : (
+              todayApts.map(renderAptCard)
+            )}
+          </section>
+
+          <section className="day-bucket mt-8">
+            <div className="bucket-header">
+              <span className="bucket-title op-50">MAÑANA</span>
+              <span className="bucket-date op-50">
+                {new Date(new Date(selectedDate).setDate(selectedDate.getDate() + 1)).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+              </span>
+            </div>
+            {tomorrowApts.length === 0 ? (
+              <div className="empty-bucket glass op-50">Cero agendas para mañana</div>
+            ) : (
+              tomorrowApts.map(renderAptCard)
+            )}
+          </section>
+        </div>
+
+        {/* Right Side: Interactive Calendar */}
+        <div className="agenda-calendar-section">
+           {renderCalendar()}
+           <div className="card glass mt-4 p-4 quote-card">
+              <p className="italic text-muted font-light" style={{ fontSize: '0.85rem' }}>"La disciplina es el puente entre las metas y los logros."</p>
+              <div className="mt-4 flex items-center gap-3">
+                 <div className="stat-indicator"><div className="gold-dot inline"></div> {busyDays.size} días con actividad</div>
+                 <div className="stat-indicator"><User size={14} /> Total: {todayApts.length + tomorrowApts.length} pacientes</div>
+              </div>
+           </div>
         </div>
       </div>
 
-      <div className="timeline">
-        {appointments.length === 0 ? (
-          <div className="card glass" style={{ textAlign: 'center', padding: '3rem' }}>
-            <p style={{ color: 'var(--text-muted)' }}>No hay citas agendadas para hoy.</p>
-            <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => navigate('/new-appointment')}>Agendar Primera Cita</button>
-          </div>
-        ) : (
-          appointments.map((apt, index) => (
-            <div key={apt.id} style={{ marginBottom: '1.5rem', position: 'relative' }}>
-              {index > 0 && appointments[index-1].type !== apt.type && (
-                <div style={{ 
-                  margin: '1rem 0', 
-                  padding: '0.6rem', 
-                  background: 'rgba(212, 175, 55, 0.1)', 
-                  borderRadius: '8px', 
-                  fontSize: '0.75rem', 
-                  color: 'var(--primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.6rem',
-                  border: '1px solid var(--border-luxury)'
-                }}>
-                  <Clock size={14} /> <span>Buffer: traslado entre sedes</span>
-                </div>
-              )}
+      <style>{`
+        .agenda-wrapper {
+          padding: 1.5rem;
+          padding-bottom: 7rem;
+        }
+        .agenda-main-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+        }
+        .agenda-grid-container {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 2rem;
+          height: auto;
+        }
+        .bucket-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-bottom: 1.2rem;
+          border-bottom: 1px solid rgba(212,175,55,0.2);
+          padding-bottom: 0.5rem;
+        }
+        .bucket-title {
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          color: white;
+          font-size: 1.1rem;
+        }
+        .bucket-date {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          text-transform: capitalize;
+        }
+        .apt-card {
+          margin-bottom: 1rem;
+          padding: 1rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: transform 0.2s;
+        }
+        .apt-card:hover {
+          transform: translateX(5px);
+          background: rgba(255,255,255,0.05);
+        }
+        .apt-time-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.4rem;
+        }
+        .apt-time {
+          font-weight: 700;
+          font-size: 0.9rem;
+        }
+        .apt-patient {
+          margin: 0.2rem 0;
+          font-size: 1rem;
+        }
+        .apt-meta {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          font-size: 0.75rem;
+          color: var(--text-muted);
+        }
+        .apt-actions {
+          display: flex;
+          gap: 0.5rem;
+        }
+        .btn-icon {
+          width: 36px;
+          height: 36px;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+        }
+        .empty-bucket {
+          padding: 2rem;
+          text-align: center;
+          color: var(--text-muted);
+          font-style: italic;
+          border-style: dashed;
+          font-size: 0.85rem;
+        }
+        
+        /* Calendar Styling */
+        .calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+          padding: 0 0.5rem;
+        }
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 5px;
+        }
+        .calendar-weekday {
+          text-align: center;
+          font-size: 0.7rem;
+          color: var(--text-muted);
+          font-weight: 700;
+          text-transform: uppercase;
+          padding-bottom: 5px;
+        }
+        .calendar-day {
+          aspect-ratio: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          border-radius: 8px;
+          position: relative;
+          font-size: 0.9rem;
+          transition: 0.2s;
+        }
+        .calendar-day:hover {
+          background: rgba(212,175,55,0.1);
+        }
+        .calendar-day.selected {
+          background: var(--primary) !important;
+          color: black;
+          font-weight: 700;
+        }
+        .gold-dot {
+          width: 4px;
+          height: 4px;
+          background: var(--primary);
+          border-radius: 50%;
+          position: absolute;
+          bottom: 6px;
+          box-shadow: 0 0 5px var(--primary);
+        }
+        .calendar-day.selected .gold-dot {
+          background: white;
+        }
+        
+        .op-50 { opacity: 0.5; }
+        .inline { display: inline-block; position: static; margin-right: 5px; }
+        .stat-indicator { font-size: 0.75rem; display: flex; alignItems: center; gap: 4px; }
 
-              <div className="card glass" style={{ 
-                borderLeft: `4px solid ${apt.type === 'delivery' ? 'var(--primary)' : 'var(--success)'}`,
-                padding: '1.2rem'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-gold)' }}>
-                        {new Date(apt.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      {apt.type === 'delivery' ? 
-                        <span className="badge badge-delivery">Delivery</span> : 
-                        <span className="badge badge-clinic">Clínica</span>
-                      }
-                    </div>
-                    <h4 style={{ fontSize: '1rem', marginTop: '0.5rem', color: 'white' }}>{apt.patients?.full_name}</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.4rem' }}>
-                      <MapPin size={14} />
-                      <span>{apt.type === 'clinic' ? apt.clinics?.name : 'Atención a Domicilio'}</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.6rem' }}>
-                    <button 
-                      className="btn btn-primary" 
-                      style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                      onClick={() => navigate('/patients', { 
-                        state: { 
-                          selectedPatientId: apt.patient_id,
-                          autoOpenTab: 'evolution',
-                          autoAddNew: true
-                        } 
-                      })}
-                    >
-                      <CheckCircle2 size={16} /> Confirmar Llegada
-                    </button>
-                    <button className="btn btn-outline" style={{ padding: '0.5rem' }} onClick={() => window.open(`tel:${apt.patients?.phone}`)}>
-                      <Phone size={18} />
-                    </button>
-                  </div>
-                </div>
-                
-                {apt.notes && (
-                  <div style={{ marginTop: '1rem', padding: '0.8rem', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', fontSize: '0.75rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                     <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '0.3rem' }}>📝 NOTAS DE CITA:</p>
-                     <p style={{ color: 'var(--text-muted)' }}>{apt.notes}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+        @media (max-width: 900px) {
+          .agenda-grid-container {
+            grid-template-columns: 1fr;
+          }
+          .agenda-calendar-section {
+            order: -1;
+            margin-bottom: 2rem;
+          }
+        }
+      `}</style>
     </div>
   );
 };
