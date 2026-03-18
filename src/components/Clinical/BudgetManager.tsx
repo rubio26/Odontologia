@@ -14,6 +14,7 @@ interface Budget {
   total_cost: number;
   num_sessions: number;
   status: 'draft' | 'active' | 'completed';
+  odontogram_data?: Record<number, any>;
   created_at: string;
 }
 
@@ -76,17 +77,19 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
     e.preventDefault();
     setSaving(true);
 
-    const total = calculateTotal();
-    const { error } = await supabase.from('budgets').insert({
-      patient_id: patientId,
-      description: newBudget.description,
-      items: newBudget.items,
-      total_cost: total,
-      num_sessions: newBudget.num_sessions,
-      status: 'active'
-    });
+    try {
+      const total = calculateTotal();
+      const { error } = await supabase.from('budgets').insert({
+        patient_id: patientId,
+        description: newBudget.description || 'Plan de Tratamiento',
+        items: newBudget.items,
+        total_cost: total,
+        num_sessions: newBudget.num_sessions,
+        status: 'active'
+      });
 
-    if (!error) {
+      if (error) throw error;
+      
       setIsCreating(false);
       setNewBudget({
         description: '',
@@ -94,8 +97,11 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
         items: [{ description: '', price: 0 }]
       });
       fetchBudgets();
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handlePrint = (budget: Budget) => {
@@ -103,50 +109,65 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
     if (!printWindow) return;
 
     const itemsHtml = budget.items.map(item => `
-      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
-        <span>${item.description}</span>
-        <span style="font-weight: bold;">${item.price.toLocaleString()} PYG</span>
+      <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
+        <span style="flex: 1;">${item.description}</span>
+        <span style="font-weight: 600; min-width: 120px; text-align: right; color: #1a1a1a;">${item.price.toLocaleString()} PYG</span>
       </div>
     `).join('');
+
+    const affectedTeeth = budget.odontogram_data 
+      ? Object.entries(budget.odontogram_data)
+          .filter(([_, surfaces]) => Object.values(surfaces as any).some(s => s !== 'healthy'))
+          .map(([id]) => id)
+          .join(', ')
+      : null;
 
     printWindow.document.write(`
       <html>
         <head>
-          <title>Presupuesto - Lumini Dental Studio</title>
+          <title>Presupuesto - Lumini Studio</title>
+          <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
           <style>
-            body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; }
-            .header { text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 20px; margin-bottom: 30px; }
-            .logo { font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #D4AF37; }
-            .patient-info { margin-bottom: 30px; }
-            .total { margin-top: 30px; text-align: right; font-size: 20px; color: #D4AF37; font-weight: bold; }
-            @media print { .no-print { display: none; } }
+            body { font-family: 'Outfit', sans-serif; padding: 50px; color: #2D3436; line-height: 1.6; }
+            .container { max-width: 800px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+            .header { text-align: center; border-bottom: 3px solid #D4AF37; padding-bottom: 30px; margin-bottom: 40px; }
+            .logo { font-size: 28px; font-weight: 800; letter-spacing: 4px; color: #1a1a1a; margin-bottom: 5px; }
+            .subtitle { font-size: 10px; letter-spacing: 3px; color: #D4AF37; text-transform: uppercase; font-weight: 600; }
+            .doc-type { font-size: 18px; color: #636E72; margin-top: 20px; font-weight: 400; }
+            .section-title { font-size: 12px; font-weight: 700; color: #D4AF37; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 30px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+            .info-item { font-size: 13px; }
+            .info-label { color: #636E72; font-weight: 600; margin-right: 8px; }
+            .total-box { margin-top: 40px; padding: 25px; background: #fdfaf0; border-radius: 8px; border-left: 5px solid #D4AF37; display: flex; justify-content: space-between; align-items: center; }
+            .total-label { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+            .total-amount { font-size: 24px; font-weight: 800; color: #D4AF37; }
+            .footer { margin-top: 60px; font-size: 11px; color: #a0a0a0; text-align: center; border-top: 1px solid #eee; padding-top: 30px; }
+            @media print { body { padding: 0; } .container { box-shadow: none; border: none; } }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div class="logo">LUMINI DENTAL STUDIO</div>
-            <p>Presupuesto de Tratamiento</p>
+          <div class="container">
+            <div class="header">
+              <div class="logo">LUMINI</div>
+              <div class="subtitle">Studio Dental Premium</div>
+              <div class="doc-type">PRESUPUESTO DE TRATAMIENTO</div>
+            </div>
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Paciente:</span> ${patientName}</div>
+              <div class="info-item" style="text-align: right;"><span class="info-label">Fecha:</span> ${new Date(budget.created_at).toLocaleDateString('es-PY', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+              <div class="info-item"><span class="info-label">Plan:</span> ${budget.description}</div>
+              <div class="info-item" style="text-align: right;"><span class="info-label">Vencimiento:</span> 15 días</div>
+            </div>
+            ${affectedTeeth ? `<div class="section-title">Análisis Clínico</div><div style="font-size: 13px; background: white; padding: 10px; border: 1px solid #eee; border-radius: 6px;"><span class="info-label">Dientes bajo tratamiento:</span> ${affectedTeeth}</div>` : ''}
+            <div class="section-title">Procedimientos e Inversión</div>
+            <div class="items">${itemsHtml}</div>
+            <div class="total-box">
+              <div><div class="total-label">Inversión Final Sugerida</div><div style="font-size: 11px; color: #636E72; margin-top: 5px;">${budget.num_sessions} ${budget.num_sessions === 1 ? 'Sesión' : 'Sesiones de tratamiento'}</div></div>
+              <div class="total-amount">${budget.total_cost.toLocaleString()} PYG</div>
+            </div>
+            <div class="footer"><p>Este documento es una cotización profesional sujeta a variaciones según respuesta clínica del paciente.</p><p style="margin-top: 10px; font-weight: 600; color: #D4AF37;">LUMINI STUDIO DENTAL • EXCELENCIA EN CADA DETALLE</p></div>
           </div>
-          <div class="patient-info">
-            <p><strong>Paciente:</strong> ${patientName}</p>
-            <p><strong>Fecha:</strong> ${new Date(budget.created_at).toLocaleDateString()}</p>
-            <p><strong>Plan:</strong> ${budget.description}</p>
-          </div>
-          <div class="items">
-            ${itemsHtml}
-          </div>
-          <div class="total">
-            Total Estimado: ${budget.total_cost.toLocaleString()} PYG
-          </div>
-          <p style="margin-top: 50px; font-size: 12px; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
-            Este presupuesto tiene una validez de 15 días. Las sesiones son estimadas y pueden variar según la evolución clínica.
-          </p>
-          <script>
-            window.onload = () => {
-              window.print();
-              // window.close();
-            }
-          </script>
+          <script>window.onload = () => { window.print(); }</script>
         </body>
       </html>
     `);
@@ -191,7 +212,6 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Procedimientos</label>
             {newBudget.items.map((item, index) => (
               <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 40px', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <input 
@@ -223,18 +243,13 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
                 </button>
               </div>
             ))}
-            <button 
-              type="button" 
-              className="btn btn-outline" 
-              style={{ padding: '0.4rem', fontSize: '0.7rem', width: '100%', marginTop: '0.5rem' }}
-              onClick={addItem}
-            >
+            <button type="button" className="btn btn-outline w-full" onClick={addItem} style={{ fontSize: '0.7rem' }}>
               <Plus size={14} /> Agregar Item
             </button>
           </div>
 
           <div className="input-group" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Número de Sesiones Estimadas</label>
+            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sesiones Estimadas</label>
             <input 
               type="number" 
               className="input-field" 
@@ -243,11 +258,6 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
               onChange={e => setNewBudget({...newBudget, num_sessions: parseInt(e.target.value)})}
               required
             />
-          </div>
-
-          <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 600 }}>Total Estimado:</span>
-            <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-gold)' }}>{calculateTotal().toLocaleString()} PYG</span>
           </div>
 
           <button type="submit" className="btn btn-primary w-full" disabled={saving}>
@@ -269,12 +279,14 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
                     {new Date(budget.created_at).toLocaleDateString()} • {budget.num_sessions} {budget.num_sessions === 1 ? 'sesión' : 'sesiones'}
                   </p>
                 </div>
-                <div className={`badge ${budget.status === 'active' ? 'badge-clinic' : 'badge-delivery'}`} style={{ fontSize: '0.65rem' }}>
-                  {budget.status.toUpperCase()}
-                </div>
               </div>
 
               <div style={{ margin: '1rem 0', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '0.8rem' }}>
+                {budget.odontogram_data && (
+                   <p style={{ fontSize: '0.7rem', color: 'var(--text-gold)', marginBottom: '0.5rem' }}>
+                      Impacto: {Object.keys(budget.odontogram_data).join(', ')}
+                   </p>
+                )}
                 {budget.items.map((item, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
                     <span>{item.description}</span>
@@ -288,20 +300,8 @@ export const BudgetManager = ({ patientId, patientName, patientPhone }: { patien
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  className="btn btn-outline" 
-                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem' }}
-                  onClick={() => shareViaWhatsApp(budget)}
-                >
-                  <MessageCircle size={16} /> WhatsApp
-                </button>
-                <button 
-                  className="btn glass" 
-                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem' }}
-                  onClick={() => handlePrint(budget)}
-                >
-                  <FileText size={16} /> PDF
-                </button>
+                <button className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => shareViaWhatsApp(budget)}><MessageCircle size={16} /> WhatsApp</button>
+                <button className="btn glass" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => handlePrint(budget)}><FileText size={16} /> PDF / Imprimir</button>
               </div>
             </div>
           ))

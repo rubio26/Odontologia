@@ -172,6 +172,7 @@ CREATE TABLE IF NOT EXISTS budgets (
     total_cost NUMERIC DEFAULT 0,
     num_sessions INTEGER DEFAULT 1,
     status TEXT DEFAULT 'active',
+    odontogram_data JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

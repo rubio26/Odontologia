@@ -10,6 +10,7 @@ import { AccessManagement } from './components/Admin/AccessManagement';
 import { NewAppointment } from './components/NewAppointment';
 import { Operations } from './components/Operations';
 import { PendingTreatments } from './components/PendingTreatments.tsx';
+import { NewBudgetWizard } from './components/Clinical/NewBudgetWizard';
 import { Auth } from './components/Auth/Auth';
 
 
@@ -70,12 +71,12 @@ const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
         </div>
       </NavLink>
 
-      <NavLink to="/patients" state={{ autoOpenTab: 'budgets' }} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <NavLink to="/new-budget" style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
           <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
             <FileText color="#8B5CF6" size={20} />
           </div>
-          <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Presupuesto</span>
+          <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Nuevo Presupuesto</span>
         </div>
       </NavLink>
     </div>
@@ -265,6 +266,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Dashboard profile={profile} user={session?.user} />} />
           <Route path="/new-appointment" element={<NewAppointment />} />
+          <Route path="/new-budget" element={<NewBudgetWizard />} />
           <Route path="/pending" element={<PendingTreatments />} />
           <Route path="/patients" element={<PatientsPage />} />
           <Route path="/agenda" element={<Agenda />} />
