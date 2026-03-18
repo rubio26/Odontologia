@@ -176,7 +176,7 @@ export const HybridAgenda = () => {
     return (
       <div 
         key={apt.id} 
-        className={`apt-card glass ${isConfirmed ? 'is-confirmed' : ''} ${isCancelled ? 'is-cancelled' : ''}`}
+        className={`apt-card glass relative ${isConfirmed ? 'is-confirmed' : ''} ${isCancelled ? 'is-cancelled' : ''}`}
         style={{ borderLeft: `3px solid ${apt.type === 'delivery' ? 'var(--primary)' : 'var(--success)'}` }}
       >
         <div className="apt-info">
@@ -186,31 +186,13 @@ export const HybridAgenda = () => {
             <span className={`badge ${apt.type === 'delivery' ? 'badge-delivery' : 'badge-clinic'}`}>{apt.type === 'delivery' ? 'D' : 'C'}</span>
           </div>
           
-          <div className="relative">
+          <div>
             <h4 
               className={`apt-patient cursor-pointer hover:underline ${isConfirmed ? 'text-black' : 'text-gold'}`}
               onClick={() => setConfirmingId(apt.id)}
             >
               {apt.patients?.full_name}
             </h4>
-
-            {confirmingId === apt.id && (
-              <div className="confirm-bubble glass">
-                <p>¿Confirmó?</p>
-                <div className="flex gap-2 mt-2">
-                  <button className="confirm-btn si" onClick={() => updateAptStatus(apt.id, 'confirmed')}>SÍ</button>
-                  <button className="confirm-btn no" onClick={() => { setConfirmingId(null); setShowOptionsId(apt.id); }}>NO</button>
-                </div>
-              </div>
-            )}
-
-            {showOptionsId === apt.id && (
-              <div className="confirm-bubble options glass">
-                <button className="option-item" onClick={() => navigate('/new-appointment')}>Reagendar</button>
-                <button className="option-item text-error" onClick={() => updateAptStatus(apt.id, 'cancelled')}>Cancelar</button>
-                <button className="option-item close" onClick={() => setShowOptionsId(null)}>Cerrar</button>
-              </div>
-            )}
           </div>
 
           <div className="apt-meta">
@@ -220,6 +202,25 @@ export const HybridAgenda = () => {
             </span>
           </div>
         </div>
+
+        {confirmingId === apt.id && (
+          <div className="confirm-bubble glass">
+            <p>¿Confirmó?</p>
+            <div className="flex gap-2 mt-2">
+              <button className="confirm-btn si" onClick={() => updateAptStatus(apt.id, 'confirmed')}>SÍ</button>
+              <button className="confirm-btn no" onClick={() => { setConfirmingId(null); setShowOptionsId(apt.id); }}>NO</button>
+            </div>
+          </div>
+        )}
+
+        {showOptionsId === apt.id && (
+          <div className="confirm-bubble options glass">
+            <button className="option-item" onClick={() => navigate('/new-appointment')}>Reagendar</button>
+            <button className="option-item text-error" onClick={() => updateAptStatus(apt.id, 'cancelled')}>Cancelar</button>
+            <button className="option-item close" onClick={() => setShowOptionsId(null)}>Cerrar</button>
+          </div>
+        )}
+
         <div className="apt-actions">
           <button className={`btn ${isConfirmed ? 'btn-white' : 'btn-primary'} btn-icon`} title="Confirmar Llegada" onClick={() => navigate('/patients', { state: { selectedPatientId: apt.patient_id, autoOpenTab: 'evolution' } })}>
             <CheckCircle2 size={16} />
@@ -410,15 +411,16 @@ export const HybridAgenda = () => {
         
         .confirm-bubble {
           position: absolute;
-          top: -10px;
-          left: 120%;
-          z-index: 50;
-          padding: 0.8rem;
-          background: #1a1a1a;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 100;
+          padding: 1rem;
+          background: #111 !important;
           border: 1px solid var(--primary);
           border-radius: 12px;
-          min-width: 160px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+          min-width: 180px;
+          box-shadow: 0 15px 50px rgba(0,0,0,0.8);
           animation: popIn 0.2s ease-out;
         }
         @keyframes popIn {
