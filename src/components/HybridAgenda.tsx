@@ -381,10 +381,23 @@ export const HybridAgenda = () => {
         .is-confirmed {
           background: var(--primary) !important;
           border-left: none !important;
+          color: black !important;
+        }
+        .is-confirmed .apt-patient,
+        .is-confirmed .apt-time,
+        .is-confirmed .apt-meta,
+        .is-confirmed .apt-meta span {
+          color: black !important;
+          font-weight: 700;
         }
         .is-confirmed .apt-patient {
-          color: black !important;
-          font-weight: 800;
+          font-weight: 850;
+        }
+        .is-confirmed .apt-meta {
+          opacity: 0.8;
+        }
+        .is-confirmed svg {
+           color: black !important;
         }
         .is-cancelled {
           opacity: 0.4;
@@ -397,13 +410,15 @@ export const HybridAgenda = () => {
         
         .confirm-bubble {
           position: absolute;
-          top: 0;
-          left: 0;
+          top: -10px;
+          left: 120%;
           z-index: 50;
           padding: 0.8rem;
+          background: #1a1a1a;
+          border: 1px solid var(--primary);
           border-radius: 12px;
-          min-width: 150px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+          min-width: 160px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.5);
           animation: popIn 0.2s ease-out;
         }
         @keyframes popIn {
