@@ -24,6 +24,8 @@ export const Tooth: React.FC<ToothProps> = ({ id, surfaces, onClick }) => {
             fill="rgba(255,255,255,0.05)" 
             stroke="rgba(212,175,55,0.3)" 
             strokeWidth="2"
+            onClick={() => onClick(id, 'center')}
+            style={{ cursor: 'pointer' }}
           />
 
           {!isAbsent && !isImplant && (

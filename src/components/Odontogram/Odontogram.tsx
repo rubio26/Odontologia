@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Tooth } from './Tooth';
-import { Save, ShieldCheck } from 'lucide-react';
+import { Save, ShieldCheck, RotateCcw } from 'lucide-react';
 import './Odontogram.css';
 
 const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
@@ -28,6 +28,12 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
       loadOdontogram();
     }
   }, [patientId]);
+
+  const handleClear = () => {
+    if (window.confirm('¿Estás seguro de que deseas limpiar todo el mapa dental? Esta acción no se puede deshacer hasta que guardes.')) {
+      setData({});
+    }
+  };
 
   const loadOdontogram = async () => {
     setLoading(true);
@@ -109,14 +115,23 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
           <h3 style={{ fontSize: '1.2rem', color: 'var(--text-gold)' }}>Morfología Dental</h3>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Registro visual de patologías y tratamientos</p>
         </div>
-        <button 
-          className="btn btn-primary" 
-          style={{ height: '40px' }}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? '...' : <><Save size={16} /> Guardar Mapa</>}
-        </button>
+        <div style={{ display: 'flex', gap: '0.8rem' }}>
+          <button 
+            className="btn btn-outline" 
+            style={{ height: '40px', borderColor: 'var(--error)', color: 'var(--error)' }}
+            onClick={handleClear}
+          >
+            <RotateCcw size={16} /> Limpiar
+          </button>
+          <button 
+            className="btn btn-primary" 
+            style={{ height: '40px' }}
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? '...' : <><Save size={16} /> Guardar Mapa</>}
+          </button>
+        </div>
       </header>
 
       <div className="controls glass" style={{ marginBottom: '2rem', display: 'flex', gap: '0.8rem', overflowX: 'auto', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
