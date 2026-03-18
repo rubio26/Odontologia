@@ -298,8 +298,8 @@ export const Operations = ({ profile }: { profile: any }) => {
             <History size={18} color="var(--primary)" /> Mis Sedes y Consultorios
           </h3>
           <button 
-            className="btn glass" 
-            style={{ padding: '0.5rem', fontSize: '0.75rem' }}
+            className="btn btn-primary" 
+            style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', height: 'auto' }}
             onClick={() => setIsAddingClinic(!isAddingClinic)}
           >
             {isAddingClinic ? 'Cerrar' : '+ Añadir'}
