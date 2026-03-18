@@ -22,16 +22,33 @@ export const NewAppointment = () => {
   useEffect(() => {
     const fetchData = async () => {
       const { data: patientsData } = await supabase.from('patients').select('id, full_name').order('full_name');
-      const { data: clinicsData } = await supabase.from('clinics').select('id, name').order('name');
+      const { data: clinicsData } = await supabase.from('clinics').select('*').order('is_home', { ascending: false });
+      
       if (patientsData) setPatients(patientsData);
-      if (clinicsData) setClinics(clinicsData);
+      if (clinicsData) {
+        setClinics(clinicsData);
+        // Autoseleccionar la Sede Home si estamos en modo clínica
+        const homeClinic = clinicsData.find(c => c.is_home);
+        if (homeClinic && formData.type === 'clinic') {
+          setFormData(prev => ({ ...prev, clinic_id: homeClinic.id }));
+        }
+      }
     };
     fetchData();
-  }, []);
+  }, [formData.type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (formData.type === 'clinic' && !formData.clinic_id) {
+      const homeClinic = clinics.find(c => c.is_home);
+      if (!homeClinic) {
+        alert('No tienes una Sede Principal configurada. Por favor, configúrala en Herramientas.');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       const start_time = new Date(`${formData.date}T${formData.time}:00`).toISOString();
@@ -156,21 +173,26 @@ export const NewAppointment = () => {
             </div>
           </div>
 
-          {/* Clinic Selection (Optional based on type) */}
-          {formData.type === 'clinic' && (
-            <div className="input-group" style={{ marginBottom: '1.5rem', animation: 'fadeIn 0.3s ease' }}>
-              <FileSpreadsheet size={18} />
-              <select 
-                className="input-field"
-                value={formData.clinic_id}
-                onChange={e => setFormData({ ...formData, clinic_id: e.target.value })}
-                style={{ width: '100%', padding: '0.8rem', background: 'transparent', color: 'white', border: 'none', appearance: 'none' }}
-              >
-                <option value="" style={{ background: '#111' }}>Seleccionar Consultorio (Sede)</option>
-                {clinics.map(c => <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.name}</option>)}
-              </select>
-            </div>
-          )}
+          {/* Clinic/Consultorio Selection */}
+          <div className="input-group" style={{ marginBottom: '1.5rem', animation: 'fadeIn 0.3s ease' }}>
+            <FileSpreadsheet size={18} />
+            <select 
+              required={formData.type === 'clinic'}
+              className="input-field"
+              value={formData.clinic_id}
+              onChange={e => setFormData({ ...formData, clinic_id: e.target.value })}
+              style={{ width: '100%', padding: '0.8rem', background: 'transparent', color: 'white', border: 'none', appearance: 'none' }}
+            >
+              <option value="" disabled style={{ background: '#111' }}>
+                {formData.type === 'clinic' ? 'Seleccionar Sede (Home)' : 'Seleccionar Consultorio (Delivery)'}
+              </option>
+              {clinics.map(c => (
+                <option key={c.id} value={c.id} style={{ background: '#111' }}>
+                  {c.name} {c.is_home ? '⭐ (Sede Principal)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Notes */}
           <div className="input-group" style={{ alignItems: 'start', paddingTop: '0.8rem' }}>

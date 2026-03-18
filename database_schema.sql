@@ -17,9 +17,11 @@ CREATE TABLE IF NOT EXISTS profiles (
 -- 1. Sedes / Consultorios
 CREATE TABLE IF NOT EXISTS clinics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    doctor_id UUID REFERENCES auth.users DEFAULT auth.uid(), -- AISLAMIENTO
     name TEXT NOT NULL,
     address TEXT,
     phone TEXT,
+    is_home BOOLEAN DEFAULT false, -- Marca si es la sede principal del médico
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -213,10 +215,8 @@ DROP POLICY IF EXISTS "Private Access" ON sterilization_logs;
 CREATE POLICY "Private Access" ON sterilization_logs FOR ALL USING (doctor_id = auth.uid());
 
 -- Clínicas y Settings siguen siendo públicos o compartidos según elección
-DROP POLICY IF EXISTS "Public View Clinics" ON clinics;
-CREATE POLICY "Public View Clinics" ON clinics FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Admin Manage Clinics" ON clinics;
-CREATE POLICY "Admin Manage Clinics" ON clinics FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
+DROP POLICY IF EXISTS "Private Access" ON clinics;
+CREATE POLICY "Private Access" ON clinics FOR ALL USING (doctor_id = auth.uid());
 
 DROP POLICY IF EXISTS "Public View Settings" ON settings;
 CREATE POLICY "Public View Settings" ON settings FOR SELECT USING (true);

@@ -12,8 +12,12 @@ export const Operations = ({ profile }: { profile: any }) => {
   const [error, setError] = useState<string | null>(null);
 
   const [labOrders, setLabOrders] = useState<any[]>([]);
+  const [clinics, setClinics] = useState<any[]>([]);
   const [recentLog, setRecentLog] = useState<any>(null);
   const [monthlyEarnings, setMonthlyEarnings] = useState(0);
+
+  const [newClinic, setNewClinic] = useState({ name: '', address: '', phone: '' });
+  const [isAddingClinic, setIsAddingClinic] = useState(false);
 
   useEffect(() => {
     fetchOperationsData();
@@ -58,6 +62,14 @@ export const Operations = ({ profile }: { profile: any }) => {
         setMonthlyEarnings(total);
       }
 
+      // 4. Fetch Clinics
+      const { data: clinicsData } = await supabase
+        .from('clinics')
+        .select('*')
+        .order('is_home', { ascending: false });
+      
+      if (clinicsData) setClinics(clinicsData);
+
     } catch (err) {
       console.error('Error fetching operations data:', err);
     } finally {
@@ -85,6 +97,48 @@ export const Operations = ({ profile }: { profile: any }) => {
       setError(err.message);
     } finally {
       setLoadingAuth(false);
+    }
+  };
+  const handleAddClinic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data, error } = await supabase
+        .from('clinics')
+        .insert([{ ...newClinic, is_home: clinics.length === 0 }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setClinics([...clinics, data]);
+      setNewClinic({ name: '', address: '', phone: '' });
+      setIsAddingClinic(false);
+    } catch (err: any) {
+      alert('Error al añadir clinica: ' + err.message);
+    }
+  };
+
+  const handleDeleteClinic = async (id: string) => {
+    if (!confirm('¿Seguro que quieres eliminar esta sede?')) return;
+    try {
+      const { error } = await supabase.from('clinics').delete().eq('id', id);
+      if (error) throw error;
+      setClinics(clinics.filter(c => c.id !== id));
+    } catch (err: any) {
+      alert('Error al eliminar: ' + err.message);
+    }
+  };
+
+  const handleSetHome = async (id: string) => {
+    try {
+      // 1. Quitar home de todos
+      await supabase.from('clinics').update({ is_home: false }).eq('doctor_id', profile.id);
+      // 2. Poner home en el seleccionado
+      const { error } = await supabase.from('clinics').update({ is_home: true }).eq('id', id);
+      
+      if (error) throw error;
+      setClinics(clinics.map(c => ({ ...c, is_home: c.id === id })));
+    } catch (err: any) {
+      alert('Error al marcar sede principal: ' + err.message);
     }
   };
 
@@ -234,6 +288,84 @@ export const Operations = ({ profile }: { profile: any }) => {
           <button className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>
             <History size={18} /> Ver Historial Biológico
           </button>
+        </div>
+      </div>
+
+      {/* Gestión de Sedes / Consultorios */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <History size={18} color="var(--primary)" /> Mis Sedes y Consultorios
+          </h3>
+          <button 
+            className="btn glass" 
+            style={{ padding: '0.5rem', fontSize: '0.75rem' }}
+            onClick={() => setIsAddingClinic(!isAddingClinic)}
+          >
+            {isAddingClinic ? 'Cerrar' : '+ Añadir'}
+          </button>
+        </div>
+
+        {isAddingClinic && (
+          <form className="card glass" onSubmit={handleAddClinic} style={{ marginBottom: '1.5rem' }}>
+            <div className="auth-form">
+              <div className="input-group">
+                <Terminal size={16} />
+                <input 
+                  placeholder="Nombre de la Sede" 
+                  value={newClinic.name} 
+                  onChange={e => setNewClinic({...newClinic, name: e.target.value})}
+                  required 
+                />
+              </div>
+              <div className="input-group">
+                <FlaskConical size={16} />
+                <input 
+                  placeholder="Dirección" 
+                  value={newClinic.address} 
+                  onChange={e => setNewClinic({...newClinic, address: e.target.value})}
+                />
+              </div>
+              <button type="submit" className="btn btn-primary w-full">Guardar Sede</button>
+            </div>
+          </form>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+          {clinics.map(clinic => (
+            <div key={clinic.id} className="card glass" style={{ position: 'relative', borderLeft: clinic.is_home ? '4px solid var(--primary)' : '1px solid var(--border-luxury)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{clinic.name}</p>
+                    {clinic.is_home && <span className="badge badge-clinic">PRINCIPAL</span>}
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{clinic.address}</p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {!clinic.is_home && (
+                    <button 
+                      onClick={() => handleSetHome(clinic.id)}
+                      className="btn glass" 
+                      style={{ padding: '0.4rem', fontSize: '0.7rem' }}
+                      title="Marcar como Principal"
+                    >
+                      Set Home
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => handleDeleteClinic(clinic.id)}
+                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer' }}
+                  >
+                    <EyeOff size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {clinics.length === 0 && !isAddingClinic && (
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No tienes sedes registradas.</p>
+          )}
         </div>
       </div>
     </div>
