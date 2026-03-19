@@ -135,7 +135,7 @@ export const NewBudgetWizard = () => {
           <div className="card glass" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
             <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Desglose de Tratamiento</h3>
             {items.map((item, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 40px', gap: '0.8rem', marginBottom: '1rem' }}>
+              <div key={i} className="grid-3">
                 <div className="input-group">
                   <input 
                     className="input-field" 

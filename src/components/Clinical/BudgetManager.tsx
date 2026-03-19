@@ -264,7 +264,7 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
 
           <div style={{ marginBottom: '1rem' }}>
             {newBudget.items.map((item, index) => (
-              <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 40px', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <div key={index} className="grid-3" style={{ marginBottom: '0.5rem' }}>
                 <input 
                   type="text" 
                   className="input-field" 

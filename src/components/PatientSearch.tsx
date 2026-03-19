@@ -88,7 +88,7 @@ export const PatientSearch = ({ onSelect }: { onSelect: (patient: any) => void }
       </div>
 
       {isAdding && (
-        <div className="auth-container" style={{ position: 'fixed', zIndex: 1000, background: 'rgba(0,0,0,0.8)' }}>
+        <div className="fixed-center">
           <form onSubmit={handleCreatePatient} className="auth-card glass" style={{ width: '90%', maxWidth: '500px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.1rem' }}>Nuevo Expediente</h3>
