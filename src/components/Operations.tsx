@@ -386,7 +386,7 @@ export const Operations = ({ profile }: { profile: any }) => {
 
             {(reportType === 'monthly' || reportType === 'custom') && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', margin: '2rem 0' }}>
+                <div className="report-stat-grid">
                   <div className="report-stat">
                     <span>INGRESOS TOTALES</span>
                     <b>{reportData.totals.income.toLocaleString()} PYG</b>
@@ -520,38 +520,52 @@ export const Operations = ({ profile }: { profile: any }) => {
 
       <style>{`
         @media print {
-          /* Hiding everything from the main app */
+          /* Force white background and reset body */
           html, body { 
             background: white !important; 
+            color: black !important;
             margin: 0 !important; 
             padding: 0 !important;
             height: auto !important;
+            width: 100% !important;
           }
-          body > #root > *:not(#print-area) { display: none !important; }
-          .app-container, .bottom-nav, .page-header, .page-content, .card, .btn, .input-group, h2, h3 { display: none !important; }
-          
+
+          /* Hide everything in the app by default */
+          body * { 
+            visibility: hidden !important; 
+          }
+
+          /* Specifically restore the report area and its children */
           #print-area, #print-area * { 
             visibility: visible !important; 
-            display: block !important;
-          }
-          #print-area { 
-            position: absolute !important;
-            left: 0; top: 0; width: 100%; 
-            background: white !important;
-            color: black !important;
-            padding: 2.5rem;
-            min-height: 100vh;
-            display: block !important;
+            display: inherit !important;
           }
 
-          .report-stat { display: flex !important; flex-direction: column; }
-          .report-table { display: table !important; }
+          #print-area { 
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 100% !important; 
+            background: white !important;
+            padding: 1.5rem !important;
+            z-index: 99999 !important;
+          }
+
+          /* Ensure layout elements in the report work correctly */
+          .report-container { display: block !important; width: 100% !important; }
+          .report-header { display: flex !important; justify-content: space-between !important; }
+          .report-stat-grid { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 1rem !important; margin: 2rem 0 !important; }
+          .report-stat { display: block !important; }
+          .report-table { display: table !important; width: 100% !important; border-collapse: collapse !important; }
+          .report-table thead { display: table-header-group !important; }
+          .report-table tbody { display: table-row-group !important; }
           .report-table tr { display: table-row !important; }
           .report-table th, .report-table td { display: table-cell !important; }
-          .report-header { display: flex !important; }
-          .report-footer { display: flex !important; }
+          .report-footer { display: flex !important; justify-content: space-between !important; }
         }
 
+        /* Screen Styles (Dashboard) */
         .report-container { font-family: 'Inter', system-ui, sans-serif; color: black; background: white; }
         .report-header { display: flex; justify-content: space-between; border-bottom: 3px solid #D4AF37; padding-bottom: 1.5rem; margin-bottom: 2rem; }
         .report-stat { padding: 1.5rem; border: 1px solid #eee; border-radius: 12px; background: #fcfcfc; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
@@ -563,6 +577,8 @@ export const Operations = ({ profile }: { profile: any }) => {
         .report-footer { margin-top: 5rem; border-top: 2px solid #f0f0f0; padding-top: 1.5rem; font-size: 0.75rem; color: #888; display: flex; justify-content: space-between; }
         .report-input-field { background: rgba(0,0,0,0.2) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; padding: 0.6rem; border-radius: 8px; width: 100%; }
         
+        .report-stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 2rem 0; }
+
         /* Table alternate colors */
         .report-table tbody tr:nth-child(even) { background: #fafafa; }
       `}</style>
