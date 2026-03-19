@@ -355,7 +355,7 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
                   </button>
                 )}
                 <button className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => shareViaWhatsApp(budget)}><MessageCircle size={16} /> WhatsApp</button>
-                <button className="btn glass" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => handlePrint(budget)}><FileText size={16} /> Imprimir</button>
+                <button className="btn glass" style={{ flex: 1, fontSize: '0.75rem', color: 'white' }} onClick={() => handlePrint(budget)}><FileText size={16} /> Imprimir</button>
               </div>
             </div>
           ))
