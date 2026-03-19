@@ -237,18 +237,37 @@ CREATE POLICY "Private Access" ON clinics FOR ALL USING (doctor_id = auth.uid())
 DROP POLICY IF EXISTS "Public View Settings" ON settings;
 CREATE POLICY "Public View Settings" ON settings FOR SELECT USING (true);
 
+-- Función para verificar si el usuario es administrador sin activar RLS recursivo
+CREATE OR REPLACE FUNCTION public.check_is_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(is_admin, false) FROM profiles WHERE id = auth.uid();
+$$;
+
 DROP POLICY IF EXISTS "Profiles Self Manage" ON profiles;
 CREATE POLICY "Profiles Self Manage" ON profiles FOR ALL USING (id = auth.uid());
 DROP POLICY IF EXISTS "Profiles Public Read" ON profiles;
 CREATE POLICY "Profiles Public Read" ON profiles FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admins Manage All Profiles" ON profiles;
-CREATE POLICY "Admins Manage All Profiles" ON profiles FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
+CREATE POLICY "Admins Manage All Profiles" ON profiles FOR ALL USING (check_is_admin());
 
 -- 11. Trigger para Perfiles Automáticos
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, username, preferred_name, document_id, birth_date, email)
+  INSERT INTO public.profiles (
+    id, 
+    full_name, 
+    username, 
+    preferred_name, 
+    document_id, 
+    birth_date, 
+    email,
+    status
+  )
   VALUES (
     NEW.id,
     NEW.raw_user_meta_data->>'full_name',
@@ -256,7 +275,8 @@ BEGIN
     NEW.raw_user_meta_data->>'preferred_name',
     NEW.raw_user_meta_data->>'document_id',
     (NEW.raw_user_meta_data->>'birth_date')::date,
-    NEW.email
+    NEW.email,
+    'pending' -- Cambio: Ahora quedan pendientes de aprobación por defecto
   );
   RETURN NEW;
 END;
