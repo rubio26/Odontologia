@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Users, Calendar, ClipboardList, FileSpreadsheet, ShieldCheck, LogOut, Clock, XCircle, Sparkles, UserPlus, FileText, FolderOpen } from 'lucide-react';
+import { Users, Calendar, ClipboardList, FileSpreadsheet, ShieldCheck, LogOut, Clock, XCircle, Sparkles, UserPlus, FileText, FolderOpen, RefreshCw } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { PatientSearch } from './components/PatientSearch';
 import { PatientDetail } from './components/PatientDetail';
@@ -23,17 +23,27 @@ const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Central de Operaciones Lumini</p>
       </div>
-      <div 
-        className="glass" 
-        style={{ width: '45px', height: '45px', borderRadius: '50%', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontWeight: 'bold', cursor: 'pointer' }}
-        onClick={() => { if(window.confirm('¿Cerrar sesión?')) supabase.auth.signOut(); }}
-      >
-        <LogOut size={18} />
+      <div style={{ display: 'flex', gap: '0.8rem' }}>
+        <div 
+          className="glass" 
+          style={{ width: '45px', height: '45px', borderRadius: '50%', border: '1px solid var(--border-luxury)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}
+          onClick={() => window.location.reload()}
+          title="Refrescar sistema"
+        >
+          <RefreshCw size={18} />
+        </div>
+        <div 
+          className="glass" 
+          style={{ width: '45px', height: '45px', borderRadius: '50%', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontWeight: 'bold', cursor: 'pointer' }}
+          onClick={() => { if(window.confirm('¿Cerrar sesión?')) supabase.auth.signOut(); }}
+        >
+          <LogOut size={18} />
+        </div>
       </div>
     </header>
     
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-      <NavLink to="/new-appointment" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <NavLink reloadDocument to="/new-appointment" style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className="card glass" style={{ height: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '0.8rem', border: '1px solid rgba(212,175,55,0.3)' }}>
           <div style={{ background: 'rgba(212, 175, 55, 0.15)', padding: '1rem', borderRadius: '20px' }}>
             <Calendar color="var(--primary)" size={32} />
@@ -42,7 +52,7 @@ const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
         </div>
       </NavLink>
       
-      <NavLink to="/patients" state={{ autoAddNew: true }} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <NavLink reloadDocument to="/patients" state={{ autoAddNew: true }} style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className="card glass" style={{ height: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '0.8rem' }}>
           <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '1rem', borderRadius: '20px' }}>
             <UserPlus color="var(--success)" size={32} />
@@ -53,7 +63,7 @@ const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
     </div>
 
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-      <NavLink to="/patients" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <NavLink reloadDocument to="/patients" style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
           <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
             <FolderOpen color="var(--primary)" size={20} />
@@ -62,7 +72,7 @@ const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
         </div>
       </NavLink>
 
-      <NavLink to="/pending" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <NavLink reloadDocument to="/pending" style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
           <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
             <Clock color="#EF4444" size={20} />
@@ -71,7 +81,7 @@ const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
         </div>
       </NavLink>
 
-      <NavLink to="/new-budget" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <NavLink reloadDocument to="/new-budget" style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className="card glass" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '1.2rem' }}>
           <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '0.6rem', borderRadius: '50%' }}>
             <FileText color="#8B5CF6" size={20} />
@@ -181,6 +191,19 @@ const StatusScreen = ({ title, message, icon: Icon, color }: any) => (
 
 const ADMIN_EMAILS = ['dIportobr@gmail.com', 'diego@ejemplo.com', 'admin@odontologia.com'];
 
+const NavigationTracker = () => {
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  return loading ? <div className="page-loader" /> : null;
+};
+
 const App = () => {
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -264,41 +287,45 @@ const App = () => {
   return (
     <Router>
       <div className="app-container" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
-        <Routes>
-          <Route path="/" element={<Dashboard profile={profile} user={session?.user} />} />
-          <Route path="/new-appointment" element={<NewAppointment />} />
-          <Route path="/new-budget" element={<NewBudgetWizard />} />
-          <Route path="/pending" element={<PendingTreatments />} />
-          <Route path="/patients" element={<PatientsPage profile={profile} />} />
-          <Route path="/agenda" element={<Agenda />} />
-          <Route path="/finance" element={<Finance />} />
-          <Route path="/ops" element={<Ops profile={profile} />} />
-          <Route 
-            path="/access" 
-            element={profile?.is_admin ? <AccessManagement /> : <Navigate to="/" />} 
-          />
-        </Routes>
+        <NavigationTracker />
+        
+        <main className="page-content" key={window.location.pathname}>
+          <Routes>
+            <Route path="/" element={<Dashboard profile={profile} user={session?.user} />} />
+            <Route path="/new-appointment" element={<NewAppointment />} />
+            <Route path="/new-budget" element={<NewBudgetWizard />} />
+            <Route path="/pending" element={<PendingTreatments />} />
+            <Route path="/patients" element={<PatientsPage profile={profile} />} />
+            <Route path="/agenda" element={<Agenda />} />
+            <Route path="/finance" element={<Finance />} />
+            <Route path="/ops" element={<Ops profile={profile} />} />
+            <Route 
+              path="/access" 
+              element={profile?.is_admin ? <AccessManagement /> : <Navigate to="/" />} 
+            />
+          </Routes>
+        </main>
 
         <nav className="bottom-nav">
-          <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink reloadDocument to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <ClipboardList size={22} />
             <span>Inicio</span>
           </NavLink>
-          <NavLink to="/agenda" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink reloadDocument to="/agenda" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Calendar size={22} />
             <span>Agenda</span>
           </NavLink>
-          <NavLink to="/patients" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink reloadDocument to="/patients" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Users size={22} />
             <span>Pacientes</span>
           </NavLink>
           {profile?.is_admin && (
-            <NavLink to="/access" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <NavLink reloadDocument to="/access" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
               <ShieldCheck size={22} />
               <span>Accesos</span>
             </NavLink>
           )}
-          <NavLink to="/ops" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink reloadDocument to="/ops" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <FileSpreadsheet size={22} />
             <span>Herramientas</span>
           </NavLink>
