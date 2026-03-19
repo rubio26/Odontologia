@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User, FileText, Calendar as CalendarIcon, PieChart, Sparkles } from 'lucide-react';
+import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User, FileText, Calendar as CalendarIcon, PieChart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export const Operations = ({ profile }: { profile: any }) => {
@@ -16,8 +16,6 @@ export const Operations = ({ profile }: { profile: any }) => {
   const [clinics, setClinics] = useState<any[]>([]);
   const [laboratories, setLaboratories] = useState<any[]>([]);
   
-  const [reportData, setReportData] = useState<any>(null);
-  const [reportType, setReportType] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showRangePicker, setShowRangePicker] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -81,45 +79,40 @@ export const Operations = ({ profile }: { profile: any }) => {
 
   const generateReport = async (type: 'monthly' | 'custom' | 'stats' | 'labs') => {
     setIsGenerating(true);
-    setReportType(type);
     
     try {
-      let data: any = {};
+      let reportData: any = {};
       const now = new Date();
 
       if (type === 'monthly' || type === 'custom') {
         const start = type === 'monthly' ? new Date(now.getFullYear(), now.getMonth(), 1).toISOString() : new Date(dateRange.start).toISOString();
         const end = type === 'monthly' ? now.toISOString() : new Date(dateRange.end + 'T23:59:59').toISOString();
 
-        // 1. Fetch Income/Expense
         const { data: trans } = await supabase
           .from('transactions')
           .select('*, patients(full_name), clinics(name)')
           .gte('created_at', start)
           .lte('created_at', end);
         
-        // 2. Fetch Pending Collections (A cobrar)
         const { data: treats } = await supabase
           .from('treatments')
           .select('*, patients(full_name)')
           .eq('status', 'active');
         
-        const aCobrar = treats?.filter(t => (t.total_amount - t.paid_amount) > 0) || [];
+        const pending = treats?.filter(t => (t.total_amount - t.paid_amount) > 0) || [];
         
-        data = { 
+        reportData = { 
           title: type === 'monthly' ? 'BALANCE MENSUAL' : 'BALANCE PERSONALIZADO',
           period: `${new Date(start).toLocaleDateString()} al ${new Date(end).toLocaleDateString()}`,
-          transactions: trans || [],
-          pending: aCobrar,
           totals: {
             income: trans?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount_pyg), 0) || 0,
             expense: trans?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount_pyg), 0) || 0,
-            pending: aCobrar.reduce((sum, t) => sum + (t.total_amount - t.paid_amount), 0)
-          }
+            pending: pending.reduce((sum, t) => sum + (t.total_amount - t.paid_amount), 0)
+          },
+          pending: pending
         };
       } 
       else if (type === 'stats') {
-        // Stats: Group by clinic and patient
         const { data: trans } = await supabase
           .from('transactions')
           .select('*, patients(full_name), clinics(name)')
@@ -135,7 +128,7 @@ export const Operations = ({ profile }: { profile: any }) => {
           byPatient[pName] = (byPatient[pName] || 0) + Number(t.amount_pyg);
         });
 
-        data = {
+        reportData = {
           title: 'ESTADÍSTICAS ACUMULADAS',
           period: `Al ${now.toLocaleDateString()}`,
           byClinic: Object.entries(byClinic).sort((a: any, b: any) => b[1] - a[1]),
@@ -148,19 +141,178 @@ export const Operations = ({ profile }: { profile: any }) => {
           .select('*, patients(full_name), laboratories(name)')
           .order('created_at', { ascending: false });
         
-        data = {
-          title: 'REPORTE DE GASTOS DE LABORATORIO',
+        reportData = {
+          title: 'REPORTE GASTOS DE LABORATORIO',
           period: `Historial Completo`,
           orders: labs || [],
           total: labs?.reduce((sum, l) => sum + Number(l.price), 0) || 0
         };
       }
 
-      setReportData(data);
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => setReportData(null), 100);
-      }, 500);
+      // OPEN NEW WINDOW FOR PRINTING
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+
+      const html = `
+        <html>
+          <head>
+            <title>${reportData.title} - Lumini Studio</title>
+            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+            <style>
+              body { font-family: 'Outfit', sans-serif; padding: 40px; color: #2D3436; line-height: 1.5; background: white; margin: 0; }
+              .header { text-align: center; border-bottom: 3px solid #D4AF37; padding-bottom: 25px; margin-bottom: 35px; display: flex; justify-content: space-between; align-items: flex-end; }
+              .logo-box { text-align: left; }
+              .logo { font-size: 26px; font-weight: 800; letter-spacing: 4px; color: #1a1a1a; margin-bottom: 2px; display: flex; align-items: center; gap: 10px; }
+              .subtitle { font-size: 10px; letter-spacing: 3px; color: #D4AF37; text-transform: uppercase; font-weight: 600; }
+              .doc-info { text-align: right; }
+              .doc-type { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+              .period { font-size: 12px; color: #636E72; }
+              
+              .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
+              .stat-card { padding: 20px; border: 1px solid #eee; border-radius: 12px; background: #fafafa; }
+              .stat-label { font-size: 10px; font-weight: 700; color: #636E72; text-transform: uppercase; margin-bottom: 5px; display: block; }
+              .stat-value { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+              th { text-align: left; padding: 12px; background: #f8f8f8; border-bottom: 2px solid #eee; color: #636E72; text-transform: uppercase; font-size: 11px; }
+              td { padding: 12px; border-bottom: 1px solid #f2f2f2; }
+              tr:nth-child(even) { background: #fafafa; }
+              
+              .section-title { font-size: 14px; font-weight: 700; color: #D4AF37; text-transform: uppercase; margin-top: 30px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+              .footer { margin-top: 60px; border-top: 1px solid #eee; padding-top: 20px; font-size: 10px; color: #a0a0a0; display: flex; justify-content: space-between; }
+              @media print { body { padding: 20px; } }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="logo-box">
+                <div class="logo">
+                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                   LUMINI STUDIO
+                </div>
+                <div class="subtitle">ESTÉTICA DENTAL AVANZADA</div>
+              </div>
+              <div class="doc-info">
+                <div class="doc-type">${reportData.title}</div>
+                <div class="period">${reportData.period}</div>
+              </div>
+            </div>
+
+            ${(type === 'monthly' || type === 'custom') ? `
+              <div class="stat-grid">
+                <div class="stat-card">
+                  <span class="stat-label">Ingresos</span>
+                  <div class="stat-value" style="color: #27ae60;">${reportData.totals.income.toLocaleString()} PYG</div>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Egresos</span>
+                  <div class="stat-value" style="color: #e74c3c;">${reportData.totals.expense.toLocaleString()} PYG</div>
+                </div>
+                <div class="stat-card" style="background: #fdfaf0; border-color: #D4AF37;">
+                  <span class="stat-label">Pendiente (A Cobrar)</span>
+                  <div class="stat-value" style="color: #D4AF37;">${reportData.totals.pending.toLocaleString()} PYG</div>
+                </div>
+              </div>
+
+              <div class="section-title">Cuentas Pendientes de Cobro</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Paciente</th>
+                    <th>Descripción</th>
+                    <th style="text-align: right;">Presupuesto</th>
+                    <th style="text-align: right;">Abonado</th>
+                    <th style="text-align: right;">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${reportData.pending.length > 0 ? reportData.pending.map((t: any) => `
+                    <tr>
+                      <td>${t.patients?.full_name}</td>
+                      <td>${t.description}</td>
+                      <td style="text-align: right;">${t.total_amount?.toLocaleString()}</td>
+                      <td style="text-align: right;">${t.paid_amount?.toLocaleString()}</td>
+                      <td style="text-align: right; font-weight: 700; color: #e74c3c;">${(t.total_amount - t.paid_amount).toLocaleString()}</td>
+                    </tr>
+                  `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #999;">No hay cobros pendientes registrados.</td></tr>'}
+                </tbody>
+              </table>
+            ` : ''}
+
+            ${type === 'stats' ? `
+              <div class="section-title">Análisis por Sede / Consultorio</div>
+              <table>
+                <thead>
+                  <tr><th>Sede / Consultorio</th><th style="text-align: right;">Recaudación Acumulada</th></tr>
+                </thead>
+                <tbody>
+                  ${reportData.byClinic.length > 0 ? reportData.byClinic.map(([name, total]: [string, number]) => `
+                    <tr><td>${name}</td><td style="text-align: right; font-weight: 700;">${total.toLocaleString()} PYG</td></tr>
+                  `).join('') : '<tr><td colspan="2" style="text-align: center; padding: 30px;">No hay datos de recaudación.</td></tr>'}
+                </tbody>
+              </table>
+
+              <div class="section-title">Top 10 Pacientes (Mayor Facturación)</div>
+              <table>
+                <thead>
+                  <tr><th>Paciente</th><th style="text-align: right;">Total Histórico</th></tr>
+                </thead>
+                <tbody>
+                  ${reportData.byPatient.length > 0 ? reportData.byPatient.map(([name, total]: [string, number]) => `
+                    <tr><td>${name}</td><td style="text-align: right; font-weight: 700; color: #D4AF37;">${total.toLocaleString()} PYG</td></tr>
+                  `).join('') : '<tr><td colspan="2" style="text-align: center; padding: 30px;">Sin datos suficientes.</td></tr>'}
+                </tbody>
+              </table>
+            ` : ''}
+
+            ${type === 'labs' ? `
+              <div class="stat-card" style="width: fit-content; margin-bottom: 30px; border-left: 5px solid #e74c3c;">
+                <span class="stat-label">Inversión Total en Laboratorios</span>
+                <div class="stat-value" style="color: #e74c3c;">${reportData.total.toLocaleString()} PYG</div>
+              </div>
+
+              <div class="section-title">Detalle de Trabajos Externos</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Trabajo</th>
+                    <th>Laboratorio</th>
+                    <th>Paciente</th>
+                    <th style="text-align: right;">Costo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${reportData.orders.length > 0 ? reportData.orders.map((o: any) => `
+                    <tr>
+                      <td>${new Date(o.created_at).toLocaleDateString()}</td>
+                      <td>${o.item_description}</td>
+                      <td>${o.laboratories?.name || '---'}</td>
+                      <td>${o.patients?.full_name}</td>
+                      <td style="text-align: right; font-weight: 700;">${o.price?.toLocaleString()}</td>
+                    </tr>
+                  `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 30px;">No hay registros de laboratorio.</td></tr>'}
+                </tbody>
+              </table>
+            ` : ''}
+
+            <div class="footer">
+              <div>Emitido por: ${profile.full_name} | Lumini Studio® Smart Management</div>
+              <div>Generado el: ${new Date().toLocaleString()}</div>
+            </div>
+            
+            <script>
+              window.onload = () => { 
+                window.print(); 
+                // Close after some time? Maybe better keep open so they can save.
+              };
+            </script>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(html);
+      printWindow.document.close();
 
     } catch (err: any) {
       alert('Error generando reporte: ' + err.message);
@@ -365,222 +517,13 @@ export const Operations = ({ profile }: { profile: any }) => {
         )}
       </div>
 
-      <div id="print-area" style={{ display: 'none' }}>
-        {reportData && (
-          <div className="report-container">
-            <header className="report-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: '#000', padding: '0.5rem', borderRadius: '4px' }}>
-                  <Sparkles size={24} color="#D4AF37" />
-                </div>
-                <div>
-                  <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>LUMINI STUDIO</h1>
-                  <p style={{ fontSize: '0.7rem', color: '#666', margin: 0 }}>ESTÉTICA DENTAL AVANZADA</p>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <h2 style={{ fontSize: '1rem', margin: 0 }}>{reportData.title}</h2>
-                <p style={{ fontSize: '0.7rem', color: '#666', margin: 0 }}>{reportData.period}</p>
-              </div>
-            </header>
-
-            {(reportType === 'monthly' || reportType === 'custom') && (
-              <>
-                <div className="report-stat-grid">
-                  <div className="report-stat">
-                    <span>INGRESOS TOTALES</span>
-                    <b>{reportData.totals.income.toLocaleString()} PYG</b>
-                  </div>
-                  <div className="report-stat">
-                    <span>EGRESOS TOTALES</span>
-                    <b style={{ color: '#EF4444' }}>{reportData.totals.expense.toLocaleString()} PYG</b>
-                  </div>
-                  <div className="report-stat">
-                    <span>SALDO PENDIENTE (A COBRAR)</span>
-                    <b style={{ color: '#D4AF37' }}>{reportData.totals.pending.toLocaleString()} PYG</b>
-                  </div>
-                </div>
-
-                <h3>Listado de Cuentas a Cobrar (Activos)</h3>
-                <table className="report-table">
-                  <thead>
-                    <tr>
-                      <th>Paciente</th>
-                      <th>Descripción</th>
-                      <th>Costo Total</th>
-                      <th>Abonado</th>
-                      <th>Saldo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.pending.length > 0 ? (
-                      reportData.pending.map((t: any) => (
-                        <tr key={t.id}>
-                          <td>{t.patients?.full_name}</td>
-                          <td>{t.description}</td>
-                          <td>{t.total_amount?.toLocaleString()}</td>
-                          <td>{t.paid_amount?.toLocaleString()}</td>
-                          <td style={{ fontWeight: 'bold' }}>{(t.total_amount - t.paid_amount).toLocaleString()}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>No hay cuentas pendientes de cobro actualmente.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </>
-            )}
-
-            {reportType === 'stats' && (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
-                  <div>
-                    <h3>Ingresos por Consultorio</h3>
-                    <table className="report-table">
-                      <thead>
-                        <tr><th>Consultorio</th><th>Recaudación</th></tr>
-                      </thead>
-                      <tbody>
-                        {reportData.byClinic.length > 0 ? (
-                          reportData.byClinic.map(([name, total]: [string, number]) => (
-                            <tr key={name}><td>{name}</td><td style={{ fontWeight: 'bold' }}>{total.toLocaleString()} PYG</td></tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan={2} style={{ textAlign: 'center', padding: '1.5rem', color: '#999' }}>No hay registros de recaudación por sede.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div>
-                    <h3>Top 10 Pacientes (Facturación)</h3>
-                    <table className="report-table">
-                      <thead>
-                        <tr><th>Paciente</th><th>Total Invertido</th></tr>
-                      </thead>
-                      <tbody>
-                        {reportData.byPatient.length > 0 ? (
-                          reportData.byPatient.map(([name, total]: [string, number]) => (
-                            <tr key={name}><td>{name}</td><td style={{ fontWeight: 'bold' }}>{total.toLocaleString()} PYG</td></tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan={2} style={{ textAlign: 'center', padding: '1.5rem', color: '#999' }}>No hay datos suficientes para el ranking.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {reportType === 'labs' && (
-              <>
-                <div style={{ margin: '2rem 0' }}>
-                   <div className="report-stat" style={{ width: 'fit-content' }}>
-                      <span>GASTO TOTAL EN LABORATORIO</span>
-                      <b style={{ color: '#EF4444' }}>{reportData.total.toLocaleString()} PYG</b>
-                   </div>
-                </div>
-                <h3>Historial Detallado de Trabajos</h3>
-                <table className="report-table">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Descripción</th>
-                      <th>Laboratorio</th>
-                      <th>Paciente</th>
-                      <th>Costo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.orders.length > 0 ? (
-                      reportData.orders.map((o: any) => (
-                        <tr key={o.id}>
-                          <td>{new Date(o.created_at).toLocaleDateString()}</td>
-                          <td>{o.item_description}</td>
-                          <td>{o.laboratories?.name || 'N/A'}</td>
-                          <td>{o.patients?.full_name}</td>
-                          <td style={{ fontWeight: 'bold' }}>{o.price?.toLocaleString()}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>No hay registros de gastos de laboratorio.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </>
-            )}
-
-            <footer className="report-footer">
-              <p>Lumini Studio Dental - Sistema de Gestión Inteligente</p>
-              <p>Generado por {profile.full_name} el {new Date().toLocaleString()}</p>
-            </footer>
-          </div>
-        )}
-      </div>
-
       <style>{`
-        @media print {
-          /* Force white background and reset body */
-          html, body { 
-            background: white !important; 
-            color: black !important;
-            margin: 0 !important; 
-            padding: 0 !important;
-            height: auto !important;
-            width: 100% !important;
-          }
-
-          /* Hide everything in the app by default */
-          body * { 
-            visibility: hidden !important; 
-          }
-
-          /* Specifically restore the report area and its children */
-          #print-area, #print-area * { 
-            visibility: visible !important; 
-            display: inherit !important;
-          }
-
-          #print-area { 
-            display: block !important;
-            position: absolute !important;
-            left: 0 !important; 
-            top: 0 !important; 
-            width: 100% !important; 
-            background: white !important;
-            padding: 1.5rem !important;
-            z-index: 99999 !important;
-          }
-
-          /* Ensure layout elements in the report work correctly */
-          .report-container { display: block !important; width: 100% !important; }
-          .report-header { display: flex !important; justify-content: space-between !important; }
-          .report-stat-grid { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 1rem !important; margin: 2rem 0 !important; }
-          .report-stat { display: block !important; }
-          .report-table { display: table !important; width: 100% !important; border-collapse: collapse !important; }
-          .report-table thead { display: table-header-group !important; }
-          .report-table tbody { display: table-row-group !important; }
-          .report-table tr { display: table-row !important; }
-          .report-table th, .report-table td { display: table-cell !important; }
-          .report-footer { display: flex !important; justify-content: space-between !important; }
-        }
-
         /* Screen Styles (Dashboard) */
-        .report-container { font-family: 'Inter', system-ui, sans-serif; color: black; background: white; }
-        .report-header { display: flex; justify-content: space-between; border-bottom: 3px solid #D4AF37; padding-bottom: 1.5rem; margin-bottom: 2rem; }
-        .report-stat { padding: 1.5rem; border: 1px solid #eee; border-radius: 12px; background: #fcfcfc; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
-        .report-stat span { display: block; font-size: 0.7rem; color: #777; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em; }
-        .report-stat b { font-size: 1.4rem; display: block; color: #111; }
-        .report-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.85rem; }
-        .report-table th { text-align: left; background: #f8f8f8; padding: 1rem; border-bottom: 2px solid #eee; color: #444; font-weight: 700; }
-        .report-table td { padding: 1rem; border-bottom: 1px solid #f0f0f0; color: #333; }
-        .report-footer { margin-top: 5rem; border-top: 2px solid #f0f0f0; padding-top: 1.5rem; font-size: 0.75rem; color: #888; display: flex; justify-content: space-between; }
         .report-input-field { background: rgba(0,0,0,0.2) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; padding: 0.6rem; border-radius: 8px; width: 100%; }
         
-        .report-stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 2rem 0; }
-
-        /* Table alternate colors */
-        .report-table tbody tr:nth-child(even) { background: #fafafa; }
+        /* Transition utility */
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
       <div style={{ marginBottom: '2.5rem' }}>
