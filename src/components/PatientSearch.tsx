@@ -39,22 +39,28 @@ export const PatientSearch = ({ onSelect }: { onSelect: (patient: any) => void }
   };
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (query.length > 1) {
-        setLoading(true);
-        const { data } = await supabase
-          .from('patients')
-          .select('*')
-          .or(`full_name.ilike.%${query}%,document_id.ilike.%${query}%`)
-          .limit(5);
-        setResults(data || []);
-        setLoading(false);
-      } else {
-        setResults([]);
-      }
-    }, 300);
+    const fetchPatients = async () => {
+      setLoading(true);
+      let queryBuilder = supabase
+        .from('patients')
+        .select('*')
+        .order('full_name', { ascending: true });
 
-    return () => clearTimeout(timer);
+      if (query.length > 0) {
+        queryBuilder = queryBuilder.or(`full_name.ilike.%${query}%,document_id.ilike.%${query}%`);
+      }
+
+      const { data } = await queryBuilder.limit(50);
+      setResults(data || []);
+      setLoading(false);
+    };
+
+    if (query === '') {
+      fetchPatients();
+    } else {
+      const timer = setTimeout(fetchPatients, 300);
+      return () => clearTimeout(timer);
+    }
   }, [query]);
 
   return (
