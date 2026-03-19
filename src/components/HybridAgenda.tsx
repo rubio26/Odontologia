@@ -248,7 +248,7 @@ export const HybridAgenda = () => {
             <MessageCircle size={16} color={isConfirmed ? 'black' : 'var(--success)'} />
           </button>
           <button className="btn btn-outline btn-icon" style={{ borderColor: isConfirmed ? 'rgba(0,0,0,0.2)' : '' }} title="Llamar" onClick={() => window.open(`tel:${apt.patients?.phone}`)}>
-            <Phone size={16} color={isConfirmed ? 'black' : ''} />
+            <Phone size={16} color={isConfirmed ? 'black' : 'var(--primary)'} />
           </button>
         </div>
       </div>
