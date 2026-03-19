@@ -39,7 +39,8 @@ export const Operations = ({ profile }: { profile: any }) => {
         .from('lab_orders')
         .select(`
           *,
-          patients (full_name)
+          patients (full_name),
+          laboratories (name)
         `)
         .order('created_at', { ascending: false })
         .limit(5);
