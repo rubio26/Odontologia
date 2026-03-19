@@ -11,9 +11,21 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNote, setPaymentNote] = useState('Abono a tratamiento');
 
+  const [clinics, setClinics] = useState<any[]>([]);
+  const [selectedClinicId, setSelectedClinicId] = useState<string>('');
+
   useEffect(() => {
     fetchData();
+    fetchClinics();
   }, [patientId]);
+
+  const fetchClinics = async () => {
+    const { data } = await supabase.from('clinics').select('*').order('is_home', { ascending: false });
+    if (data) {
+      setClinics(data);
+      if (data.length > 0) setSelectedClinicId(data[0].id);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -31,7 +43,7 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
       // 2. Fetch all transactions for this patient related to treatments
       const { data: txs } = await supabase
         .from('transactions')
-        .select('*')
+        .select('*, clinics(name)')
         .eq('patient_id', patientId)
         .eq('category', 'Tratamiento')
         .order('created_at', { ascending: false });
@@ -59,7 +71,8 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
           amount_pyg: amount,
           type: 'income',
           category: 'Tratamiento',
-          treatment_id: activeTreatment.id
+          treatment_id: activeTreatment.id,
+          clinic_id: selectedClinicId
         }]);
 
       if (txError) throw txError;
@@ -162,7 +175,9 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
                 </div>
                 <div>
                   <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>{tx.description}</p>
-                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(tx.created_at).toLocaleString()}</p>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    {new Date(tx.created_at).toLocaleString()} | 📍 {tx.clinics?.name || 'Sede Principal'}
+                  </p>
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -202,7 +217,7 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
               />
             </div>
 
-            <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+            <div className="input-group" style={{ marginBottom: '1rem' }}>
               <Receipt size={18} />
               <input 
                 type="text" 
@@ -210,6 +225,17 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
                 value={paymentNote}
                 onChange={e => setPaymentNote(e.target.value)}
               />
+            </div>
+
+            <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+              <History size={18} />
+              <select 
+                value={selectedClinicId}
+                onChange={e => setSelectedClinicId(e.target.value)}
+                style={{ background: 'transparent', border: 'none', color: 'white', width: '100%', padding: '0.5rem' }}
+              >
+                {clinics.map(c => <option key={c.id} value={c.id} style={{ background: '#111' }}>📍 {c.name}</option>)}
+              </select>
             </div>
 
             <div style={{ display: 'flex', gap: '1rem' }}>

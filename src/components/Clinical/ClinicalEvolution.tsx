@@ -106,10 +106,14 @@ export const ClinicalEvolution = ({
       fetchNotes();
       
       if (newNote.amount_paid > 0) {
+        const { data: homeClinic } = await supabase.from('clinics').select('id').eq('is_home', true).maybeSingle();
         await supabase.from('transactions').insert({
           patient_id: patientId,
           description: `Pago en sesión: ${newNote.procedure_notes.substring(0, 30)}...`,
-          amount_pyg: newNote.amount_paid
+          amount_pyg: newNote.amount_paid,
+          type: 'income',
+          category: 'Sesión',
+          clinic_id: homeClinic?.id
         });
       }
     }

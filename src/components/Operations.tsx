@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User } from 'lucide-react';
+import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User, FileText, Calendar as CalendarIcon, PieChart, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export const Operations = ({ profile }: { profile: any }) => {
@@ -15,7 +15,12 @@ export const Operations = ({ profile }: { profile: any }) => {
   const [patients, setPatients] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
   const [laboratories, setLaboratories] = useState<any[]>([]);
-  const [monthlyEarnings, setMonthlyEarnings] = useState(0);
+  
+  const [reportData, setReportData] = useState<any>(null);
+  const [reportType, setReportType] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showRangePicker, setShowRangePicker] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
   const [registryType, setRegistryType] = useState<'clinics' | 'labs'>('clinics');
   const [newEntry, setNewEntry] = useState({ name: '', address: '', phone: '' });
@@ -42,21 +47,6 @@ export const Operations = ({ profile }: { profile: any }) => {
         .limit(5);
 
       if (labs) setLabOrders(labs);
-
-
-      // 3. Fetch Monthly Earnings (Sum of transactions)
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const { data: trans } = await supabase
-        .from('transactions')
-        .select('amount_pyg')
-        .eq('type', 'income')
-        .gte('created_at', firstDay);
-
-      if (trans) {
-        const total = trans.reduce((sum, t) => sum + Number(t.amount_pyg), 0);
-        setMonthlyEarnings(total);
-      }
 
       // 4. Fetch Clinics
       const { data: clinicsData } = await supabase
@@ -89,6 +79,97 @@ export const Operations = ({ profile }: { profile: any }) => {
     }
   };
 
+  const generateReport = async (type: 'monthly' | 'custom' | 'stats' | 'labs') => {
+    setIsGenerating(true);
+    setReportType(type);
+    
+    try {
+      let data: any = {};
+      const now = new Date();
+
+      if (type === 'monthly' || type === 'custom') {
+        const start = type === 'monthly' ? new Date(now.getFullYear(), now.getMonth(), 1).toISOString() : new Date(dateRange.start).toISOString();
+        const end = type === 'monthly' ? now.toISOString() : new Date(dateRange.end + 'T23:59:59').toISOString();
+
+        // 1. Fetch Income/Expense
+        const { data: trans } = await supabase
+          .from('transactions')
+          .select('*, patients(full_name), clinics(name)')
+          .gte('created_at', start)
+          .lte('created_at', end);
+        
+        // 2. Fetch Pending Collections (A cobrar)
+        const { data: treats } = await supabase
+          .from('treatments')
+          .select('*, patients(full_name)')
+          .eq('status', 'active');
+        
+        const aCobrar = treats?.filter(t => (t.total_amount - t.paid_amount) > 0) || [];
+        
+        data = { 
+          title: type === 'monthly' ? 'BALANCE MENSUAL' : 'BALANCE PERSONALIZADO',
+          period: `${new Date(start).toLocaleDateString()} al ${new Date(end).toLocaleDateString()}`,
+          transactions: trans || [],
+          pending: aCobrar,
+          totals: {
+            income: trans?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount_pyg), 0) || 0,
+            expense: trans?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount_pyg), 0) || 0,
+            pending: aCobrar.reduce((sum, t) => sum + (t.total_amount - t.paid_amount), 0)
+          }
+        };
+      } 
+      else if (type === 'stats') {
+        // Stats: Group by clinic and patient
+        const { data: trans } = await supabase
+          .from('transactions')
+          .select('*, patients(full_name), clinics(name)')
+          .eq('type', 'income');
+        
+        const byClinic: Record<string, number> = {};
+        const byPatient: Record<string, number> = {};
+        
+        trans?.forEach(t => {
+          const cName = t.clinics?.name || 'Sede Principal';
+          const pName = t.patients?.full_name || 'Anónimo';
+          byClinic[cName] = (byClinic[cName] || 0) + Number(t.amount_pyg);
+          byPatient[pName] = (byPatient[pName] || 0) + Number(t.amount_pyg);
+        });
+
+        data = {
+          title: 'ESTADÍSTICAS ACUMULADAS',
+          period: `Al ${now.toLocaleDateString()}`,
+          byClinic: Object.entries(byClinic).sort((a: any, b: any) => b[1] - a[1]),
+          byPatient: Object.entries(byPatient).sort((a: any, b: any) => b[1] - a[1]).slice(0, 10)
+        };
+      }
+      else if (type === 'labs') {
+        const { data: labs } = await supabase
+          .from('lab_orders')
+          .select('*, patients(full_name), laboratories(name)')
+          .order('created_at', { ascending: false });
+        
+        data = {
+          title: 'REPORTE DE GASTOS DE LABORATORIO',
+          period: `Historial Completo`,
+          orders: labs || [],
+          total: labs?.reduce((sum, l) => sum + Number(l.price), 0) || 0
+        };
+      }
+
+      setReportData(data);
+      setTimeout(() => {
+        window.print();
+        setReportData(null);
+      }, 500);
+
+    } catch (err: any) {
+      alert('Error generando reporte: ' + err.message);
+    } finally {
+      setIsGenerating(false);
+      setShowRangePicker(false);
+    }
+  };
+
   const handleVerifyPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoadingAuth(true);
@@ -111,12 +192,13 @@ export const Operations = ({ profile }: { profile: any }) => {
       setLoadingAuth(false);
     }
   };
+
   const handleAddEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const table = registryType === 'clinics' ? 'clinics' : 'laboratories';
       const payload = registryType === 'clinics' 
-        ? { ...newEntry, is_home: clinics.length === 0 }
+        ? { ...newEntry, doctor_id: profile.id, is_home: clinics.length === 0 }
         : newEntry;
 
       const { data, error } = await supabase
@@ -194,7 +276,6 @@ export const Operations = ({ profile }: { profile: any }) => {
         <div className="badge badge-clinic">Bioseguridad Nivel A</div>
       </div>
 
-      {/* Sección de Ingresos Protegida */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Wallet size={18} color="var(--primary)" /> Recaudación
@@ -208,12 +289,12 @@ export const Operations = ({ profile }: { profile: any }) => {
                 style={{ width: '100%' }}
                 onClick={() => setShowPasswordInput(true)}
               >
-                <Lock size={18} /> Ver Ingresos Estimados
+                <Lock size={18} /> Ver Reportes Financieros
               </button>
             ) : (
               <form onSubmit={handleVerifyPassword}>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                  Ingresa tu contraseña para ver los ingresos:
+                  Ingresa tu contraseña para ver los reportes:
                 </p>
                 <div className="input-group" style={{ marginBottom: '1rem' }}>
                   <Lock size={18} />
@@ -228,24 +309,8 @@ export const Operations = ({ profile }: { profile: any }) => {
                 </div>
                 {error && <p className="error-message" style={{ marginBottom: '1rem' }}>{error}</p>}
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button 
-                    type="button" 
-                    className="btn btn-outline" 
-                    style={{ flex: 1 }}
-                    onClick={() => {
-                      setShowPasswordInput(false);
-                      setError(null);
-                      setPassword('');
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary" 
-                    style={{ flex: 2 }}
-                    disabled={loadingAuth}
-                  >
+                  <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => { setShowPasswordInput(false); setError(null); setPassword(''); }}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={loadingAuth}>
                     {loadingAuth ? <Loader2 className="animate-spin" size={20} /> : 'Verificar'}
                   </button>
                 </div>
@@ -253,23 +318,214 @@ export const Operations = ({ profile }: { profile: any }) => {
             )}
           </div>
         ) : (
-          <div className="card" style={{ background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A1A 100%)', borderLeft: '5px solid var(--primary)', position: 'relative' }}>
+          <div className="card glass" style={{ padding: '0.5rem', position: 'relative' }}>
             <button 
-              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', zIndex: 10 }}
               onClick={() => setShowIncome(false)}
             >
               <EyeOff size={18} />
             </button>
-            <h3 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', opacity: 0.8 }}>Ingresos Estimados (Mes)</h3>
-            <p style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-gold)' }}>
-              {monthlyEarnings.toLocaleString()} <span style={{ fontSize: '1rem' }}>PYG</span>
-            </p>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-               <span className="badge badge-clinic">BASADO EN TRANSACCIONES REALES</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', padding: '0.5rem' }}>
+              <button className="btn btn-outline" style={{ height: 'auto', padding: '1rem 0.5rem', flexDirection: 'column', gap: '0.5rem' }} onClick={() => generateReport('monthly')}>
+                <FileText size={20} color="var(--primary)" />
+                <span style={{ fontSize: '0.7rem' }}>Balance Mensual</span>
+              </button>
+              <button className="btn btn-outline" style={{ height: 'auto', padding: '1rem 0.5rem', flexDirection: 'column', gap: '0.5rem' }} onClick={() => setShowRangePicker(true)}>
+                <CalendarIcon size={20} color="var(--primary)" />
+                <span style={{ fontSize: '0.7rem' }}>Rango Fechas</span>
+              </button>
+              <button className="btn btn-outline" style={{ height: 'auto', padding: '1rem 0.5rem', flexDirection: 'column', gap: '0.5rem' }} onClick={() => generateReport('stats')}>
+                <PieChart size={20} color="var(--primary)" />
+                <span style={{ fontSize: '0.7rem' }}>Estadísticas</span>
+              </button>
+              <button className="btn btn-outline" style={{ height: 'auto', padding: '1rem 0.5rem', flexDirection: 'column', gap: '0.5rem' }} onClick={() => generateReport('labs')}>
+                <FlaskConical size={20} color="var(--primary)" />
+                <span style={{ fontSize: '0.7rem' }}>Gastos Lab</span>
+              </button>
             </div>
+
+            {showRangePicker && (
+              <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.8rem' }}>
+                  <input type="date" className="report-input-field" value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} />
+                  <input type="date" className="report-input-field" value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} />
+                </div>
+                <button className="btn btn-primary w-full" onClick={() => generateReport('custom')} disabled={!dateRange.start || !dateRange.end}>
+                  Generar Reporte Personalizado
+                </button>
+              </div>
+            )}
+            
+            {isGenerating && (
+              <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                <Loader2 className="animate-spin" size={18} /> <span>Generando reporte...</span>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      <div id="print-area" style={{ display: 'none' }}>
+        {reportData && (
+          <div className="report-container">
+            <header className="report-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: '#000', padding: '0.5rem', borderRadius: '4px' }}>
+                  <Sparkles size={24} color="#D4AF37" />
+                </div>
+                <div>
+                  <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>LUMINI STUDIO</h1>
+                  <p style={{ fontSize: '0.7rem', color: '#666', margin: 0 }}>ESTÉTICA DENTAL AVANZADA</p>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <h2 style={{ fontSize: '1rem', margin: 0 }}>{reportData.title}</h2>
+                <p style={{ fontSize: '0.7rem', color: '#666', margin: 0 }}>{reportData.period}</p>
+              </div>
+            </header>
+
+            {(reportType === 'monthly' || reportType === 'custom') && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', margin: '2rem 0' }}>
+                  <div className="report-stat">
+                    <span>INGRESOS TOTALES</span>
+                    <b>{reportData.totals.income.toLocaleString()} PYG</b>
+                  </div>
+                  <div className="report-stat">
+                    <span>EGRESOS TOTALES</span>
+                    <b style={{ color: '#EF4444' }}>{reportData.totals.expense.toLocaleString()} PYG</b>
+                  </div>
+                  <div className="report-stat">
+                    <span>SALDO PENDIENTE (A COBRAR)</span>
+                    <b style={{ color: '#D4AF37' }}>{reportData.totals.pending.toLocaleString()} PYG</b>
+                  </div>
+                </div>
+
+                <h3>Listado de Cuentas a Cobrar (Activos)</h3>
+                <table className="report-table">
+                  <thead>
+                    <tr>
+                      <th>Paciente</th>
+                      <th>Descripción</th>
+                      <th>Costo Total</th>
+                      <th>Abonado</th>
+                      <th>Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.pending.map((t: any) => (
+                      <tr key={t.id}>
+                        <td>{t.patients?.full_name}</td>
+                        <td>{t.description}</td>
+                        <td>{t.total_amount?.toLocaleString()}</td>
+                        <td>{t.paid_amount?.toLocaleString()}</td>
+                        <td style={{ fontWeight: 'bold' }}>{(t.total_amount - t.paid_amount).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {reportType === 'stats' && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
+                  <div>
+                    <h3>Ingresos por Consultorio</h3>
+                    <table className="report-table">
+                      <thead>
+                        <tr><th>Consultorio</th><th>Recaudación</th></tr>
+                      </thead>
+                      <tbody>
+                        {reportData.byClinic.map(([name, total]: [string, number]) => (
+                          <tr key={name}><td>{name}</td><td style={{ fontWeight: 'bold' }}>{total.toLocaleString()} PYG</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div>
+                    <h3>Top 10 Pacientes (Facturación)</h3>
+                    <table className="report-table">
+                      <thead>
+                        <tr><th>Paciente</th><th>Total Invertido</th></tr>
+                      </thead>
+                      <tbody>
+                        {reportData.byPatient.map(([name, total]: [string, number]) => (
+                          <tr key={name}><td>{name}</td><td style={{ fontWeight: 'bold' }}>{total.toLocaleString()} PYG</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {reportType === 'labs' && (
+              <>
+                <div style={{ margin: '2rem 0' }}>
+                   <div className="report-stat" style={{ width: 'fit-content' }}>
+                      <span>GASTO TOTAL EN LABORATORIO</span>
+                      <b style={{ color: '#EF4444' }}>{reportData.total.toLocaleString()} PYG</b>
+                   </div>
+                </div>
+                <h3>Historial Detallado de Trabajos</h3>
+                <table className="report-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Descripción</th>
+                      <th>Laboratorio</th>
+                      <th>Paciente</th>
+                      <th>Costo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.orders.map((o: any) => (
+                      <tr key={o.id}>
+                        <td>{new Date(o.created_at).toLocaleDateString()}</td>
+                        <td>{o.item_description}</td>
+                        <td>{o.laboratories?.name || 'N/A'}</td>
+                        <td>{o.patients?.full_name}</td>
+                        <td style={{ fontWeight: 'bold' }}>{o.price?.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            <footer className="report-footer">
+              <p>Lumini Studio Dental - Sistema de Gestión Inteligente</p>
+              <p>Generado por {profile.full_name} el {new Date().toLocaleString()}</p>
+            </footer>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          #print-area, #print-area * { visibility: visible !important; }
+          #print-area { 
+            display: block !important; 
+            position: absolute; 
+            left: 0; top: 0; width: 100%; 
+            background: white !important;
+            color: black !important;
+            padding: 2.5rem;
+          }
+        }
+        .report-container { font-family: 'Inter', sans-serif; color: black; }
+        .report-header { display: flex; justify-content: space-between; border-bottom: 2px solid #D4AF37; padding-bottom: 1.5rem; }
+        .report-stat { padding: 1.2rem; border: 1px solid #eee; border-radius: 12px; background: #fafafa; }
+        .report-stat span { display: block; font-size: 0.65rem; color: #777; margin-bottom: 0.4rem; font-weight: 700; }
+        .report-stat b { font-size: 1.2rem; display: block; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.8rem; }
+        .report-table th { text-align: left; background: #f9f9f9; padding: 0.8rem; border-bottom: 2px solid #eee; color: #555; }
+        .report-table td { padding: 0.8rem; border-bottom: 1px solid #f0f0f0; }
+        .report-footer { margin-top: 4rem; border-top: 1px solid #eee; padding-top: 1.5rem; font-size: 0.7rem; color: #aaa; display: flex; justify-content: space-between; }
+        .report-input-field { background: rgba(0,0,0,0.2) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; padding: 0.6rem; border-radius: 8px; width: 100%; }
+      `}</style>
 
       <div style={{ marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -363,8 +619,6 @@ export const Operations = ({ profile }: { profile: any }) => {
         </div>
       </div>
 
-
-      {/* Gestión Unificada de Registros (Sedes y Laboratorios) */}
       <div style={{ marginTop: '2.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
