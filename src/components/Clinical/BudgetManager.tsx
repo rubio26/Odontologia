@@ -200,6 +200,8 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
           description: budget.description,
           status: 'active',
           initial_state: budget.odontogram_data || {},
+          total_amount: budget.total_cost || 0,
+          paid_amount: 0,
           created_at: new Date().toISOString()
         }]);
 

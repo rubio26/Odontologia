@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Tooth } from './Tooth';
-import { Save, ShieldCheck, RotateCcw, History, Archive } from 'lucide-react';
+import { Save, ShieldCheck, RotateCcw, History, Archive, DollarSign, PlusCircle } from 'lucide-react';
 import './Odontogram.css';
 
 const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
@@ -15,6 +15,9 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
   const [treatments, setTreatments] = useState<any[]>([]);
   const [selectedTreatmentId, setSelectedTreatmentId] = useState<string>('active');
   const [activeTreatment, setActiveTreatment] = useState<any>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentNote, setPaymentNote] = useState('Abono a tratamiento');
 
   const states = [
     { id: 'caries', label: 'Caries', color: '#EF4444' },
@@ -154,6 +157,46 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
     }
   };
 
+  const handleRegisterPayment = async () => {
+    if (!activeTreatment || !paymentAmount) return;
+    setSaving(true);
+    try {
+      const amount = parseFloat(paymentAmount);
+      
+      // 1. Create Transaction
+      const { error: txError } = await supabase
+        .from('transactions')
+        .insert([{
+          patient_id: patientId,
+          description: `Pago: ${activeTreatment.description} - ${paymentNote}`,
+          amount_pyg: amount,
+          type: 'income',
+          category: 'Tratamiento',
+          treatment_id: activeTreatment.id
+        }]);
+
+      if (txError) throw txError;
+
+      // 2. Update Treatment paid_amount
+      const newPaid = (activeTreatment.paid_amount || 0) + amount;
+      const { error: treatError } = await supabase
+        .from('treatments')
+        .update({ paid_amount: newPaid })
+        .eq('id', activeTreatment.id);
+
+      if (treatError) throw treatError;
+
+      alert('Pago registrado correctamente.');
+      setShowPaymentModal(false);
+      setPaymentAmount('');
+      fetchTreatments();
+    } catch (err: any) {
+      alert('Error al registrar pago: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleToothClick = (id: number, surface: string) => {
     const wholeToothStates = ['crown', 'implant', 'absent', 'protesis', 'exodoncia'];
     
@@ -250,6 +293,98 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
           )}
         </div>
       </header>
+
+      {/* Financial Summary Banner */}
+      {activeTreatment && !isHistory && (
+        <div className="card glass" style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(212,175,55,0.05) 0%, rgba(0,0,0,0) 100%)', borderLeft: '4px solid var(--primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '2rem' }}>
+              <div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total Presupuesto</p>
+                <p style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-gold)' }}>{activeTreatment.total_amount?.toLocaleString()} <span style={{ fontSize: '0.7rem' }}>PYG</span></p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Pagado</p>
+                <p style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--success)' }}>{activeTreatment.paid_amount?.toLocaleString()} <span style={{ fontSize: '0.7rem' }}>PYG</span></p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Saldo Pendiente</p>
+                <p style={{ fontSize: '1.2rem', fontWeight: 700, color: activeTreatment.total_amount - activeTreatment.paid_amount > 0 ? '#EF4444' : 'var(--success)' }}>
+                  {(activeTreatment.total_amount - activeTreatment.paid_amount).toLocaleString()} <span style={{ fontSize: '0.7rem' }}>PYG</span>
+                </p>
+              </div>
+            </div>
+            
+            <button 
+              className="btn btn-primary" 
+              style={{ padding: '0.6rem 1.2rem', gap: '0.5rem' }}
+              onClick={() => setShowPaymentModal(true)}
+            >
+              <DollarSign size={18} /> Registrar Abono
+            </button>
+          </div>
+          
+          <div style={{ marginTop: '1rem', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ 
+              height: '100%', 
+              width: `${Math.min(100, (activeTreatment.paid_amount / activeTreatment.total_amount) * 100)}%`, 
+              background: 'var(--primary)',
+              transition: 'width 1s ease-out'
+            }} />
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="auth-container" style={{ position: 'fixed', zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
+          <div className="auth-card glass" style={{ width: '90%', maxWidth: '400px', borderTop: '4px solid var(--primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <DollarSign size={20} color="var(--primary)" /> Registrar Pago
+              </h3>
+              <button className="btn glass p-1" onClick={() => setShowPaymentModal(false)}><PlusCircle style={{ transform: 'rotate(45deg)' }} size={20} /></button>
+            </div>
+            
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.2rem' }}>
+              Tratamiento: <strong>{activeTreatment?.description}</strong>
+            </p>
+
+            <div className="input-group" style={{ marginBottom: '1rem' }}>
+              <DollarSign size={18} />
+              <input 
+                type="number" 
+                placeholder="Monto a entregar (PYG)" 
+                value={paymentAmount}
+                onChange={e => setPaymentAmount(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+              <PlusCircle size={18} />
+              <input 
+                type="text" 
+                placeholder="Nota (ej. Entrega inicial)" 
+                value={paymentNote}
+                onChange={e => setPaymentNote(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowPaymentModal(false)}>Cancelar</button>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1 }} 
+                onClick={handleRegisterPayment}
+                disabled={saving || !paymentAmount}
+              >
+                {saving ? 'Guardando...' : 'Confirmar Pago'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className={`controls glass ${isHistory ? 'disabled-controls' : ''}`} style={{ marginBottom: '2rem', display: 'flex', gap: '0.8rem', overflowX: 'auto', padding: '1rem', borderRadius: 'var(--radius-md)', opacity: isHistory ? 0.3 : 1, pointerEvents: isHistory ? 'none' : 'auto' }}>
         {states.map(s => (
