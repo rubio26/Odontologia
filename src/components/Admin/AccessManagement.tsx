@@ -16,13 +16,18 @@ export const AccessManagement = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
+    console.log('Cargando usuarios con filtro:', filter);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('status', filter)
       .order('created_at', { ascending: false });
 
-    if (!error) {
+    if (error) {
+      console.error('Error cargando usuarios:', error);
+      alert('Error cargando usuarios: ' + error.message);
+    } else {
+      console.log('Usuarios cargados:', data);
       setUsers(data || []);
     }
     setLoading(false);
@@ -44,9 +49,19 @@ export const AccessManagement = () => {
   return (
     <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
       <header style={{ marginBottom: '2rem' }}>
-        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Users size={28} color="var(--primary)" />
-          Gestión de Usuarios
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Users size={28} color="var(--primary)" />
+            Gestión de Usuarios
+          </div>
+          <button 
+            onClick={fetchUsers} 
+            className="btn btn-outline" 
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+            disabled={loading}
+          >
+            {loading ? '...' : 'Recargar'}
+          </button>
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           Administra el acceso y los permisos de los miembros del equipo.
