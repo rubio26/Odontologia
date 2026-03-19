@@ -159,7 +159,7 @@ export const Operations = ({ profile }: { profile: any }) => {
       setReportData(data);
       setTimeout(() => {
         window.print();
-        setReportData(null);
+        setTimeout(() => setReportData(null), 100);
       }, 500);
 
     } catch (err: any) {
@@ -413,15 +413,19 @@ export const Operations = ({ profile }: { profile: any }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {reportData.pending.map((t: any) => (
-                      <tr key={t.id}>
-                        <td>{t.patients?.full_name}</td>
-                        <td>{t.description}</td>
-                        <td>{t.total_amount?.toLocaleString()}</td>
-                        <td>{t.paid_amount?.toLocaleString()}</td>
-                        <td style={{ fontWeight: 'bold' }}>{(t.total_amount - t.paid_amount).toLocaleString()}</td>
-                      </tr>
-                    ))}
+                    {reportData.pending.length > 0 ? (
+                      reportData.pending.map((t: any) => (
+                        <tr key={t.id}>
+                          <td>{t.patients?.full_name}</td>
+                          <td>{t.description}</td>
+                          <td>{t.total_amount?.toLocaleString()}</td>
+                          <td>{t.paid_amount?.toLocaleString()}</td>
+                          <td style={{ fontWeight: 'bold' }}>{(t.total_amount - t.paid_amount).toLocaleString()}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>No hay cuentas pendientes de cobro actualmente.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </>
@@ -437,9 +441,13 @@ export const Operations = ({ profile }: { profile: any }) => {
                         <tr><th>Consultorio</th><th>Recaudación</th></tr>
                       </thead>
                       <tbody>
-                        {reportData.byClinic.map(([name, total]: [string, number]) => (
-                          <tr key={name}><td>{name}</td><td style={{ fontWeight: 'bold' }}>{total.toLocaleString()} PYG</td></tr>
-                        ))}
+                        {reportData.byClinic.length > 0 ? (
+                          reportData.byClinic.map(([name, total]: [string, number]) => (
+                            <tr key={name}><td>{name}</td><td style={{ fontWeight: 'bold' }}>{total.toLocaleString()} PYG</td></tr>
+                          ))
+                        ) : (
+                          <tr><td colSpan={2} style={{ textAlign: 'center', padding: '1.5rem', color: '#999' }}>No hay registros de recaudación por sede.</td></tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -450,9 +458,13 @@ export const Operations = ({ profile }: { profile: any }) => {
                         <tr><th>Paciente</th><th>Total Invertido</th></tr>
                       </thead>
                       <tbody>
-                        {reportData.byPatient.map(([name, total]: [string, number]) => (
-                          <tr key={name}><td>{name}</td><td style={{ fontWeight: 'bold' }}>{total.toLocaleString()} PYG</td></tr>
-                        ))}
+                        {reportData.byPatient.length > 0 ? (
+                          reportData.byPatient.map(([name, total]: [string, number]) => (
+                            <tr key={name}><td>{name}</td><td style={{ fontWeight: 'bold' }}>{total.toLocaleString()} PYG</td></tr>
+                          ))
+                        ) : (
+                          <tr><td colSpan={2} style={{ textAlign: 'center', padding: '1.5rem', color: '#999' }}>No hay datos suficientes para el ranking.</td></tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -480,15 +492,19 @@ export const Operations = ({ profile }: { profile: any }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {reportData.orders.map((o: any) => (
-                      <tr key={o.id}>
-                        <td>{new Date(o.created_at).toLocaleDateString()}</td>
-                        <td>{o.item_description}</td>
-                        <td>{o.laboratories?.name || 'N/A'}</td>
-                        <td>{o.patients?.full_name}</td>
-                        <td style={{ fontWeight: 'bold' }}>{o.price?.toLocaleString()}</td>
-                      </tr>
-                    ))}
+                    {reportData.orders.length > 0 ? (
+                      reportData.orders.map((o: any) => (
+                        <tr key={o.id}>
+                          <td>{new Date(o.created_at).toLocaleDateString()}</td>
+                          <td>{o.item_description}</td>
+                          <td>{o.laboratories?.name || 'N/A'}</td>
+                          <td>{o.patients?.full_name}</td>
+                          <td style={{ fontWeight: 'bold' }}>{o.price?.toLocaleString()}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>No hay registros de gastos de laboratorio.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </>
@@ -504,27 +520,51 @@ export const Operations = ({ profile }: { profile: any }) => {
 
       <style>{`
         @media print {
-          body * { visibility: hidden !important; }
-          #print-area, #print-area * { visibility: visible !important; }
+          /* Hiding everything from the main app */
+          html, body { 
+            background: white !important; 
+            margin: 0 !important; 
+            padding: 0 !important;
+            height: auto !important;
+          }
+          body > #root > *:not(#print-area) { display: none !important; }
+          .app-container, .bottom-nav, .page-header, .page-content, .card, .btn, .input-group, h2, h3 { display: none !important; }
+          
+          #print-area, #print-area * { 
+            visibility: visible !important; 
+            display: block !important;
+          }
           #print-area { 
-            display: block !important; 
-            position: absolute; 
+            position: absolute !important;
             left: 0; top: 0; width: 100%; 
             background: white !important;
             color: black !important;
             padding: 2.5rem;
+            min-height: 100vh;
+            display: block !important;
           }
+
+          .report-stat { display: flex !important; flex-direction: column; }
+          .report-table { display: table !important; }
+          .report-table tr { display: table-row !important; }
+          .report-table th, .report-table td { display: table-cell !important; }
+          .report-header { display: flex !important; }
+          .report-footer { display: flex !important; }
         }
-        .report-container { font-family: 'Inter', sans-serif; color: black; }
-        .report-header { display: flex; justify-content: space-between; border-bottom: 2px solid #D4AF37; padding-bottom: 1.5rem; }
-        .report-stat { padding: 1.2rem; border: 1px solid #eee; border-radius: 12px; background: #fafafa; }
-        .report-stat span { display: block; font-size: 0.65rem; color: #777; margin-bottom: 0.4rem; font-weight: 700; }
-        .report-stat b { font-size: 1.2rem; display: block; }
-        .report-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.8rem; }
-        .report-table th { text-align: left; background: #f9f9f9; padding: 0.8rem; border-bottom: 2px solid #eee; color: #555; }
-        .report-table td { padding: 0.8rem; border-bottom: 1px solid #f0f0f0; }
-        .report-footer { margin-top: 4rem; border-top: 1px solid #eee; padding-top: 1.5rem; font-size: 0.7rem; color: #aaa; display: flex; justify-content: space-between; }
+
+        .report-container { font-family: 'Inter', system-ui, sans-serif; color: black; background: white; }
+        .report-header { display: flex; justify-content: space-between; border-bottom: 3px solid #D4AF37; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+        .report-stat { padding: 1.5rem; border: 1px solid #eee; border-radius: 12px; background: #fcfcfc; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
+        .report-stat span { display: block; font-size: 0.7rem; color: #777; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.05em; }
+        .report-stat b { font-size: 1.4rem; display: block; color: #111; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.85rem; }
+        .report-table th { text-align: left; background: #f8f8f8; padding: 1rem; border-bottom: 2px solid #eee; color: #444; font-weight: 700; }
+        .report-table td { padding: 1rem; border-bottom: 1px solid #f0f0f0; color: #333; }
+        .report-footer { margin-top: 5rem; border-top: 2px solid #f0f0f0; padding-top: 1.5rem; font-size: 0.75rem; color: #888; display: flex; justify-content: space-between; }
         .report-input-field { background: rgba(0,0,0,0.2) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; padding: 0.6rem; border-radius: 8px; width: 100%; }
+        
+        /* Table alternate colors */
+        .report-table tbody tr:nth-child(even) { background: #fafafa; }
       `}</style>
 
       <div style={{ marginBottom: '2.5rem' }}>
