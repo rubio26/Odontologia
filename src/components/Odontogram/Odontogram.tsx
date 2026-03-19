@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Tooth } from './Tooth';
-import { Save, ShieldCheck, RotateCcw } from 'lucide-react';
+import { Save, ShieldCheck, RotateCcw, History, Archive } from 'lucide-react';
 import './Odontogram.css';
 
 const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
@@ -12,6 +12,9 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedState, setSelectedState] = useState('caries');
+  const [treatments, setTreatments] = useState<any[]>([]);
+  const [selectedTreatmentId, setSelectedTreatmentId] = useState<string>('active');
+  const [activeTreatment, setActiveTreatment] = useState<any>(null);
 
   const states = [
     { id: 'caries', label: 'Caries', color: '#EF4444' },
@@ -25,9 +28,24 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
 
   useEffect(() => {
     if (patientId) {
+      fetchTreatments();
       loadOdontogram();
     }
-  }, [patientId]);
+  }, [patientId, selectedTreatmentId]);
+
+  const fetchTreatments = async () => {
+    const { data: list } = await supabase
+      .from('treatments')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('created_at', { ascending: false });
+    
+    if (list) {
+      setTreatments(list);
+      const active = list.find(t => t.status === 'active');
+      setActiveTreatment(active);
+    }
+  };
 
   const handleClear = () => {
     if (window.confirm('¿Estás seguro de que deseas limpiar todo el mapa dental? Esta acción no se puede deshacer hasta que guardes.')) {
@@ -37,16 +55,28 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
 
   const loadOdontogram = async () => {
     setLoading(true);
-    const { data: odontogram } = await supabase
-      .from('odontograms')
-      .select('data')
-      .eq('patient_id', patientId)
-      .single();
-    
-    if (odontogram) {
-      setData(odontogram.data);
+    try {
+      if (selectedTreatmentId === 'active') {
+        const { data: odontogram } = await supabase
+          .from('odontograms')
+          .select('data')
+          .eq('patient_id', patientId)
+          .single();
+        
+        setData(odontogram?.data || {});
+      } else {
+        const treatment = treatments.find(t => t.id === selectedTreatmentId);
+        if (treatment) {
+          // If seeing history, we might want to see the initial or final state
+          // User said: "al seleccionar el ultimo tratamiento que hizo el odontograma de abajo se actualiza como era al inicio del tratamiento"
+          setData(treatment.initial_state || {});
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSave = async () => {
@@ -82,32 +112,45 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
   };
 
   const handleFinalize = async () => {
-    if (!window.confirm('¿Confirmas el fin del tratamiento? Se guardará el estado actual y se convertirán las caries en restauraciones realizadas.')) {
+    if (!activeTreatment) {
+      alert('No hay un tratamiento activo para finalizar. Primero inicia uno desde un presupuesto.');
+      return;
+    }
+
+    if (!window.confirm('¿Confirmas el fin del tratamiento actual? Se archivará el estado final y el odontograma activo se limpiará para futuros planes.')) {
       return;
     }
 
     setSaving(true);
-    const newData = { ...data };
-    
-    // Transformar estados
-    Object.keys(newData).forEach(toothId => {
-      const id = Number(toothId);
-      const surfaces = { ...newData[id] };
-      
-      Object.keys(surfaces).forEach(surface => {
-        if (surfaces[surface] === 'caries') surfaces[surface] = 'done';
-        if (surfaces[surface] === 'exodoncia') surfaces[surface] = 'absent';
-      });
-      
-      newData[id] = surfaces;
-    });
+    try {
+      // 1. Save final state to treatment record
+      const { error: treatmentError } = await supabase
+        .from('treatments')
+        .update({ 
+          status: 'finished',
+          final_state: data,
+          finished_at: new Date().toISOString()
+        })
+        .eq('id', activeTreatment.id);
 
-    setData(newData);
-    
-    // Guardar el nuevo estado "limpio/finalizado"
-    const success = await handleSave();
-    if (success) {
-      alert('¡Felicidades! Tratamiento finalizado y archivado correctamente.');
+      if (treatmentError) throw treatmentError;
+
+      // 2. Clear current active odontogram
+      const { error: clearError } = await supabase
+        .from('odontograms')
+        .update({ data: {}, updated_at: new Date().toISOString() })
+        .eq('patient_id', patientId);
+
+      if (clearError) throw clearError;
+
+      alert('¡Tratamiento finalizado y archivado correctamente!');
+      setData({});
+      fetchTreatments();
+      setSelectedTreatmentId('active');
+    } catch (err: any) {
+      alert('Error al finalizar: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -139,44 +182,76 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
 
   if (loading) return <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--primary)' }}>Cargando evolución dental...</div>;
 
+  const isHistory = selectedTreatmentId !== 'active';
+
   return (
     <div className="odontogram-container" style={{ animation: 'fadeIn 0.5s ease' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-luxury)', paddingBottom: '1rem' }}>
-        <div>
-          <h3 style={{ fontSize: '1.2rem', color: 'var(--text-gold)' }}>Morfología Dental</h3>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Registro visual de patologías y tratamientos</p>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.4rem' }}>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--text-gold)' }}>Morfología Dental</h3>
+            <div className="glass" style={{ padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <History size={14} color="var(--primary)" />
+              <select 
+                value={selectedTreatmentId}
+                onChange={(e) => setSelectedTreatmentId(e.target.value)}
+                style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', outline: 'none' }}
+              >
+                <option value="active" style={{ background: '#111' }}>{activeTreatment ? `🟢 Activo: ${activeTreatment.description}` : '⚪ Sin tratamiento activo'}</option>
+                <optgroup label="Archivo de Tratamientos" style={{ background: '#111' }}>
+                  {treatments.filter(t => t.status === 'finished').map(t => (
+                    <option key={t.id} value={t.id} style={{ background: '#111' }}>
+                      📁 {new Date(t.finished_at).toLocaleDateString()}: {t.description}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+          </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            {isHistory ? 'Visualizando estado inicial del tratamiento archivado' : 'Registro visual de patologías y tratamientos en curso'}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '0.8rem' }}>
-          <button 
-            className="btn btn-outline" 
-            style={{ height: '40px', borderColor: 'var(--error)', color: 'var(--error)' }}
-            onClick={handleClear}
-          >
-            <RotateCcw size={16} /> Limpiar
-          </button>
-          <button 
-            className="btn btn-outline" 
-            style={{ height: '40px', borderColor: 'var(--success)', color: 'var(--success)' }}
-            onClick={handleFinalize}
-            disabled={saving}
-          >
-            <ShieldCheck size={16} /> Finalizar Tratamiento
-          </button>
-          <button 
-            className="btn btn-primary" 
-            style={{ height: '40px' }}
-            onClick={async () => {
-              const success = await handleSave();
-              if (success) alert('Mapa dental actualizado con éxito.');
-            }}
-            disabled={saving}
-          >
-            {saving ? '...' : <><Save size={16} /> Guardar Cambios</>}
-          </button>
+          {!isHistory && (
+            <>
+              <button 
+                className="btn btn-outline" 
+                style={{ height: '40px', borderColor: 'var(--error)', color: 'var(--error)' }}
+                onClick={handleClear}
+              >
+                <RotateCcw size={16} /> Limpiar
+              </button>
+              <button 
+                className="btn btn-outline" 
+                style={{ height: '40px', borderColor: 'var(--success)', color: 'var(--success)' }}
+                onClick={handleFinalize}
+                disabled={saving || !activeTreatment}
+              >
+                <ShieldCheck size={16} /> Finalizar Tratamiento
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ height: '40px' }}
+                onClick={async () => {
+                  const success = await handleSave();
+                  if (success) alert('Mapa dental actualizado con éxito.');
+                }}
+                disabled={saving}
+              >
+                {saving ? '...' : <><Save size={16} /> Guardar Cambios</>}
+              </button>
+            </>
+          )}
+          {isHistory && (
+            <div className="badge badge-clinic" style={{ height: '40px', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)' }}>
+              <Archive size={16} style={{ marginRight: '0.5rem' }} /> MODO LECTURA: ARCHIVO
+            </div>
+          )}
         </div>
       </header>
 
-      <div className="controls glass" style={{ marginBottom: '2rem', display: 'flex', gap: '0.8rem', overflowX: 'auto', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+      <div className={`controls glass ${isHistory ? 'disabled-controls' : ''}`} style={{ marginBottom: '2rem', display: 'flex', gap: '0.8rem', overflowX: 'auto', padding: '1rem', borderRadius: 'var(--radius-md)', opacity: isHistory ? 0.3 : 1, pointerEvents: isHistory ? 'none' : 'auto' }}>
         {states.map(s => (
           <button 
             key={s.id}
@@ -196,7 +271,7 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
         ))}
       </div>
 
-      <div className="odontogram-section">
+      <div className={`odontogram-section ${isHistory ? 'read-only' : ''}`} style={{ pointerEvents: isHistory ? 'none' : 'auto' }}>
         <span className="section-label">Arcada Superior</span>
         <div className="tooth-grid glass">
           {upperTeeth.map(id => (
@@ -205,7 +280,7 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
         </div>
       </div>
 
-      <div className="odontogram-section" style={{ marginTop: '2.5rem' }}>
+      <div className={`odontogram-section ${isHistory ? 'read-only' : ''}`} style={{ marginTop: '2.5rem', pointerEvents: isHistory ? 'none' : 'auto' }}>
         <span className="section-label">Arcada Inferior</span>
         <div className="tooth-grid glass">
           {lowerTeeth.map(id => (

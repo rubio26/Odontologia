@@ -12,7 +12,8 @@ import {
   Smartphone, 
   MapPin as MapPinIcon, 
   Loader2, 
-  Clipboard as ClipboardIcon 
+  Clipboard as ClipboardIcon,
+  Archive
 } from 'lucide-react';
 import { PhotoGallery } from './Clinical/PhotoGallery';
 import { DigitalConsent } from './Clinical/DigitalConsent';
@@ -20,6 +21,7 @@ import { Odontogram } from './Odontogram/Odontogram';
 import { ClinicalEvolution } from './Clinical/ClinicalEvolution';
 import { BudgetManager } from './Clinical/BudgetManager';
 import { ClinicalHistory } from './Clinical/ClinicalHistory';
+import { TreatmentArchive } from './Clinical/TreatmentArchive';
 
 export const PatientDetail = ({ 
   patient, 
@@ -158,6 +160,7 @@ export const PatientDetail = ({
           { id: 'history', label: 'Historia', icon: <ClipboardIcon size={16} /> },
           { id: 'budget', label: 'Presupuesto', icon: <FileText size={16} /> },
           { id: 'gallery', label: 'Galería', icon: <Camera size={16} /> },
+          { id: 'archive', label: 'Archivo', icon: <Archive size={16} /> },
           { id: 'consent', label: 'Firma', icon: <PenTool size={16} /> }
         ].map(t => (
           <button 
@@ -226,7 +229,14 @@ export const PatientDetail = ({
             patientName={patient.full_name} 
             patientPhone={patient.phone} 
             doctorName={doctorName}
+            onStartTreatment={() => setActiveTab('clinical')}
           />
+        </div>
+      )}
+
+      {activeTab === 'archive' && (
+        <div style={{ padding: '1rem' }}>
+          <TreatmentArchive patientId={patient.id} />
         </div>
       )}
     </div>

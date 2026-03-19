@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Plus, Save, Trash2, MessageCircle, FileText } from 'lucide-react';
+import { Plus, Save, Trash2, MessageCircle, FileText, Activity } from 'lucide-react';
 
 interface BudgetItem {
   description: string;
@@ -18,7 +18,7 @@ interface Budget {
   created_at: string;
 }
 
-export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName }: { patientId: string, patientName: string, patientPhone?: string, doctorName?: string }) => {
+export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName, onStartTreatment }: { patientId: string, patientName: string, patientPhone?: string, doctorName?: string, onStartTreatment?: () => void }) => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -185,6 +185,49 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
     const text = `Hola ${patientName}, adjunto el presupuesto detallado de su tratamiento dental:\n\n*${budget.description}*\n${itemsText}\n\n*Total:* ${budget.total_cost.toLocaleString()} PYG\n*Sesiones estimadas:* ${budget.num_sessions}\n\nQuedamos a las órdenes para agendar su primera sesión.`;
     window.open(`https://wa.me/${patientPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`);
   };
+ 
+  const handleStartTreatment = async (budget: Budget) => {
+    if (!confirm(`¿Deseas iniciar el tratamiento "${budget.description}"? Esto actualizará el odontograma activo con los cambios propuestos.`)) return;
+    
+    setSaving(true);
+    try {
+      // 1. Create entry in treatments table
+      const { error: treatmentError } = await supabase
+        .from('treatments')
+        .insert([{
+          patient_id: patientId,
+          budget_id: budget.id,
+          description: budget.description,
+          status: 'active',
+          initial_state: budget.odontogram_data || {},
+          created_at: new Date().toISOString()
+        }]);
+
+      if (treatmentError) throw treatmentError;
+
+      // 2. Update current odontogram if budget has data
+      if (budget.odontogram_data) {
+        await supabase
+          .from('odontograms')
+          .upsert({ 
+            patient_id: patientId, 
+            data: budget.odontogram_data,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'patient_id' });
+      }
+
+      // 3. Mark budget as completed
+      await supabase.from('budgets').update({ status: 'completed' }).eq('id', budget.id);
+
+      alert('¡Tratamiento iniciado! Ahora puedes seguir la evolución en el Odontograma.');
+      fetchBudgets();
+      if (onStartTreatment) onStartTreatment();
+    } catch (err: any) {
+      alert('Error al iniciar tratamiento: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando presupuestos...</div>;
 
@@ -306,8 +349,13 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {budget.status === 'active' && (
+                  <button className="btn btn-primary" style={{ flex: 1.5, fontSize: '0.75rem' }} onClick={() => handleStartTreatment(budget)}>
+                    <Activity size={16} /> Iniciar Tratamiento
+                  </button>
+                )}
                 <button className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => shareViaWhatsApp(budget)}><MessageCircle size={16} /> WhatsApp</button>
-                <button className="btn glass" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => handlePrint(budget)}><FileText size={16} /> PDF / Imprimir</button>
+                <button className="btn glass" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => handlePrint(budget)}><FileText size={16} /> Imprimir</button>
               </div>
             </div>
           ))
