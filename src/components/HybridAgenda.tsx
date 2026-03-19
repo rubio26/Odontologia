@@ -258,8 +258,8 @@ export const HybridAgenda = () => {
   return (
     <div className="agenda-wrapper h-full">
       <header className="agenda-main-header">
-        <div className="flex items-center gap-4">
-           <div className="logo-sparkle glass"><CalendarIcon size={24} color="var(--primary)" /></div>
+        <div className="flex items-center gap-2">
+           <CalendarIcon size={28} color="var(--primary)" />
            <h2 className="text-2xl font-bold tracking-wider">MI AGENDA <span className="text-gold">LUMINI</span></h2>
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/new-appointment')}>+ Agendar Cita</button>
