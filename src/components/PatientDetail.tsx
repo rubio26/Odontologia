@@ -22,6 +22,8 @@ import { ClinicalEvolution } from './Clinical/ClinicalEvolution';
 import { BudgetManager } from './Clinical/BudgetManager';
 import { ClinicalHistory } from './Clinical/ClinicalHistory';
 import { TreatmentArchive } from './Clinical/TreatmentArchive';
+import { TreatmentPayments } from './Clinical/TreatmentPayments';
+import { DollarSign } from 'lucide-react';
 
 export const PatientDetail = ({ 
   patient, 
@@ -161,7 +163,8 @@ export const PatientDetail = ({
           { id: 'budget', label: 'Presupuesto', icon: <FileText size={16} /> },
           { id: 'gallery', label: 'Galería', icon: <Camera size={16} /> },
           { id: 'archive', label: 'Archivo', icon: <Archive size={16} /> },
-          { id: 'consent', label: 'Firma', icon: <PenTool size={16} /> }
+          { id: 'consent', label: 'Firma', icon: <PenTool size={16} /> },
+          { id: 'payments', label: 'Pagos', icon: <DollarSign size={16} /> }
         ].map(t => (
           <button 
             key={t.id}
@@ -237,6 +240,12 @@ export const PatientDetail = ({
       {activeTab === 'archive' && (
         <div style={{ padding: '1rem' }}>
           <TreatmentArchive patientId={patient.id} />
+        </div>
+      )}
+
+      {activeTab === 'payments' && (
+        <div style={{ padding: '1rem' }}>
+          <TreatmentPayments patientId={patient.id} />
         </div>
       )}
     </div>

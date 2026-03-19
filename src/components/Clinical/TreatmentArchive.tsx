@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Calendar, CheckCircle2, History, DollarSign } from 'lucide-react';
+import { Calendar, CheckCircle2, FlaskConical, History } from 'lucide-react';
 
 export const TreatmentArchive = ({ patientId }: { patientId: string }) => {
   const [treatments, setTreatments] = useState<any[]>([]);
@@ -49,23 +49,6 @@ export const TreatmentArchive = ({ patientId }: { patientId: string }) => {
                     <CheckCircle2 size={14} /> Fin: {new Date(t.finished_at).toLocaleDateString()}
                 </span>
               </div>
-              
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.8rem', fontSize: '0.85rem' }}>
-                <div>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', display: 'block' }}>TOTAL</span>
-                  <span style={{ fontWeight: 700 }}>{t.total_amount?.toLocaleString()} <small>PYG</small></span>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', display: 'block' }}>PAGADO</span>
-                  <span style={{ fontWeight: 700, color: 'var(--success)' }}>{t.paid_amount?.toLocaleString()} <small>PYG</small></span>
-                </div>
-                {t.total_amount - t.paid_amount > 0 && (
-                  <div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', display: 'block' }}>SALDO</span>
-                    <span style={{ fontWeight: 700, color: '#EF4444' }}>{(t.total_amount - t.paid_amount).toLocaleString()} <small>PYG</small></span>
-                  </div>
-                )}
-              </div>
             </div>
             <div className="badge badge-clinic" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>
               ARCHIVADO
@@ -74,10 +57,10 @@ export const TreatmentArchive = ({ patientId }: { patientId: string }) => {
           
           <div style={{ marginTop: '1rem', padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <DollarSign size={12} color="var(--primary)" /> Historial Financiero y Morfológico
+                <FlaskConical size={12} /> Estado Final del Odontograma guardado
             </p>
             <p style={{ fontSize: '0.8rem' }}>
-                Este registro contiene el balance final y la morfología dental al concluir el tratamiento.
+                Este registro contiene la morfología dental al concluir el tratamiento. Puedes consultarla seleccionando este tratamiento en la pestaña de Odontograma.
             </p>
           </div>
         </div>
