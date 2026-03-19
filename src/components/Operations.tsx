@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Terminal, Droplets, CheckCircle2, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User } from 'lucide-react';
+import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export const Operations = ({ profile }: { profile: any }) => {
@@ -15,7 +15,6 @@ export const Operations = ({ profile }: { profile: any }) => {
   const [patients, setPatients] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
   const [laboratories, setLaboratories] = useState<any[]>([]);
-  const [recentLog, setRecentLog] = useState<any>(null);
   const [monthlyEarnings, setMonthlyEarnings] = useState(0);
 
   const [registryType, setRegistryType] = useState<'clinics' | 'labs'>('clinics');
@@ -44,15 +43,6 @@ export const Operations = ({ profile }: { profile: any }) => {
 
       if (labs) setLabOrders(labs);
 
-      // 2. Fetch Latest Sterilization Log
-      const { data: log } = await supabase
-        .from('sterilization_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (log) setRecentLog(log);
 
       // 3. Fetch Monthly Earnings (Sum of transactions)
       const now = new Date();
@@ -373,35 +363,6 @@ export const Operations = ({ profile }: { profile: any }) => {
         </div>
       </div>
 
-      <div>
-        <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Droplets size={18} color="var(--success)" /> Bitácora de Esterilización
-        </h3>
-        <div className="card glass" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px' }}>
-              <Terminal color="var(--success)" size={32} />
-            </div>
-            {recentLog ? (
-              <div>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Último Ciclo {recentLog.cycle_number ? `#${recentLog.cycle_number}` : ''}</p>
-                <p style={{ fontWeight: 700, fontSize: '1.1rem' }}>{recentLog.machine_name}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--success)', fontSize: '0.8rem', marginTop: '0.4rem' }}>
-                  <CheckCircle2 size={14} /> <span>{recentLog.status} - T: {recentLog.temperature}°C / P: {recentLog.pressure}bar</span>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p style={{ fontWeight: 700, fontSize: '1.1rem' }}>Sin Registros</p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No se han registrado ciclos de esterilización.</p>
-              </div>
-            )}
-          </div>
-          <button className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>
-            <History size={18} /> Ver Historial Biológico
-          </button>
-        </div>
-      </div>
 
       {/* Gestión Unificada de Registros (Sedes y Laboratorios) */}
       <div style={{ marginTop: '2.5rem' }}>
