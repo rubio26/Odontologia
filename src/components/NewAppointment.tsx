@@ -91,7 +91,7 @@ export const NewAppointment = ({ profile }: { profile: any }) => {
 
       const { error } = await supabase.from('appointments').insert({
         doctor_id: profile.id,
-        patient_id: patientId,
+        patient_id: formData.type === 'delivery' ? null : (patientId || null),
         clinic_id: formData.clinic_id || null,
         start_time,
         end_time,
