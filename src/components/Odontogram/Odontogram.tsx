@@ -120,9 +120,11 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
       return;
     }
 
-    // Validación Financiera: No finalizar si hay saldo pendiente
+    // Validación Financiera: No finalizar si hay saldo pendiente (A menos que sea Delivery)
     const saldo = (activeTreatment.total_amount || 0) - (activeTreatment.paid_amount || 0);
-    if (saldo > 0) {
+    const isDelivery = !!activeTreatment.clinic_id;
+
+    if (saldo > 0 && !isDelivery) {
       alert(`⚠️ No se puede finalizar el tratamiento. \n\nEl paciente aún tiene un SALDO PENDIENTE de ${saldo.toLocaleString()} PYG. Por favor, registra el pago total en la pestaña de "Pagos" antes de archivar.`);
       return;
     }

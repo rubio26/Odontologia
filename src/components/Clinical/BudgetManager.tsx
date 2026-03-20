@@ -195,7 +195,7 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
     setSaving(true);
     try {
       // 1. Create entry in treatments table
-      const { error: treatmentError } = await supabase
+      const { data: treatData, error: treatmentError } = await supabase
         .from('treatments')
         .insert([{
           patient_id: patientId,
@@ -208,7 +208,8 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
           paid_amount: 0,
           clinic_id: budget.clinic_id || null,
           created_at: new Date().toISOString()
-        }]);
+        }])
+        .select();
 
       if (treatmentError) throw treatmentError;
 
@@ -226,6 +227,21 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
 
       // 3. Mark budget as completed
       await supabase.from('budgets').update({ status: 'completed' }).eq('id', budget.id).eq('doctor_id', profile.id);
+      
+      // 4. If delivery, create initial clinic payment tracking
+      if (budget.clinic_id && treatData && treatData[0]) {
+        await supabase.from('clinic_payments').insert({
+          doctor_id: profile.id,
+          clinic_id: budget.clinic_id,
+          patient_id: patientId,
+          budget_id: budget.id,
+          treatment_id: treatData[0].id,
+          description: `Tratamiento: ${budget.description}`,
+          total_amount: budget.total_cost,
+          paid_amount: 0,
+          status: 'pending'
+        });
+      }
 
       alert('¡Tratamiento iniciado! Ahora puedes seguir la evolución en el Odontograma.');
       fetchBudgets();
