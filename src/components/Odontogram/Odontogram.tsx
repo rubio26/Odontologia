@@ -147,6 +147,21 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
 
       if (treatmentError) throw treatmentError;
 
+      // Ensure clinic_payments record exists and is up to date for delivery treatments
+      if (activeTreatment.clinic_id) {
+        await supabase.from('clinic_payments').upsert({
+          doctor_id: profile.id,
+          clinic_id: activeTreatment.clinic_id,
+          patient_id: patientId,
+          budget_id: activeTreatment.budget_id,
+          treatment_id: activeTreatment.id,
+          description: `Tratamiento Finalizado: ${activeTreatment.description}`,
+          total_amount: activeTreatment.total_amount,
+          paid_amount: activeTreatment.paid_amount || 0,
+          status: (activeTreatment.paid_amount || 0) >= activeTreatment.total_amount ? 'paid' : 'pending'
+        }, { onConflict: 'treatment_id' });
+      }
+
       const { error: clearError } = await supabase
         .from('odontograms')
         .update({ data: {}, updated_at: new Date().toISOString() })
