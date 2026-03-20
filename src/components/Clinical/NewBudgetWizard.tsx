@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { PatientSearch } from '../PatientSearch';
 import { Tooth } from '../Odontogram/Tooth';
@@ -10,7 +10,9 @@ const lowerTeeth = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 
 
 export const NewBudgetWizard = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(1);
+  const clinicId = location.state?.clinicId;
   const [loading, setLoading] = useState(false);
   
   // State
@@ -63,7 +65,8 @@ export const NewBudgetWizard = ({ profile }: { profile: any }) => {
         total_cost: total,
         num_sessions: numSessions,
         odontogram_data: odontogramData,
-        status: 'active'
+        status: 'active',
+        clinic_id: clinicId || null
       });
 
       if (error) throw error;

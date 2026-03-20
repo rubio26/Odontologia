@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User, FileText, Calendar as CalendarIcon, PieChart, ArrowRight } from 'lucide-react';
+import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User, FileText, Calendar as CalendarIcon, PieChart, ArrowRight, Home } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export const Operations = ({ profile }: { profile: any }) => {
@@ -726,10 +726,10 @@ export const Operations = ({ profile }: { profile: any }) => {
                   {registryType === 'clinics' && !item.is_home && (
                     <button 
                       onClick={() => handleSetHome(item.id)}
-                      className="btn glass" 
-                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.65rem' }}
+                      className="btn btn-primary" 
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.65rem', border: 'none', background: 'var(--primary)' }}
                     >
-                      Home
+                      <Home size={12} /> Definir Sede Principal
                     </button>
                   )}
                   <button 

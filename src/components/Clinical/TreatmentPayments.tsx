@@ -13,6 +13,7 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
 
   const [clinics, setClinics] = useState<any[]>([]);
   const [selectedClinicId, setSelectedClinicId] = useState<string>('');
+  const [isDelivery, setIsDelivery] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -40,6 +41,8 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
         .maybeSingle();
       
       setActiveTreatment(treats);
+      setIsDelivery(!!treats?.clinic_id);
+      if (treats?.clinic_id) setSelectedClinicId(treats.clinic_id);
 
       // 2. Fetch all transactions for this patient related to treatments
       const { data: txs } = await supabase
@@ -89,6 +92,26 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
         .eq('doctor_id', profile.id);
 
       if (treatError) throw treatError;
+      
+      // 3. If delivery, update clinic_payments tracking
+      if (isDelivery) {
+        // Upsert clinic payment record for this treatment/budget
+        const { error: cpError } = await supabase
+          .from('clinic_payments')
+          .upsert({
+            doctor_id: profile.id,
+            clinic_id: activeTreatment.clinic_id,
+            patient_id: patientId,
+            budget_id: activeTreatment.budget_id,
+            treatment_id: activeTreatment.id,
+            description: `Abono: ${activeTreatment.description}`,
+            total_amount: activeTreatment.total_amount,
+            paid_amount: newPaid,
+            status: newPaid >= activeTreatment.total_amount ? 'paid' : 'partial'
+          }, { onConflict: 'treatment_id' });
+        
+        if (cpError) console.error("Error updating clinic_payments:", cpError);
+      }
 
       setShowPaymentModal(false);
       setPaymentAmount('');
@@ -117,6 +140,26 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
 
   return (
     <div style={{ animation: 'fadeIn 0.5s ease' }}>
+      {/* Delivery Banner */}
+      {isDelivery && (
+        <div className="card glass" style={{ 
+          marginBottom: '1rem', 
+          padding: '0.8rem 1.2rem', 
+          background: 'rgba(139, 92, 246, 0.1)', 
+          border: '1px solid rgba(139, 92, 246, 0.2)',
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.8rem',
+          color: '#A78BFA'
+        }}>
+          <AlertCircle size={20} />
+          <div>
+            <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>Tratamiento por Delivery</p>
+            <p style={{ fontSize: '0.7rem', opacity: 0.8 }}>Los cobros se registran contra la clínica externa asociada.</p>
+          </div>
+        </div>
+      )}
+
       {/* Active Treatment Summary */}
       {activeTreatment && (
         <div className="card glass" style={{ marginBottom: '2rem', borderLeft: '4px solid var(--primary)', background: 'linear-gradient(135deg, rgba(212,175,55,0.05) 0%, rgba(0,0,0,0) 100%)' }}>
@@ -130,7 +173,7 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
               style={{ gap: '0.5rem' }}
               onClick={() => setShowPaymentModal(true)}
             >
-              <PlusCircle size={18} /> Registrar Cobro
+              <PlusCircle size={18} /> {isDelivery ? 'Registrar Pago Clínica' : 'Registrar Cobro'}
             </button>
           </div>
 
@@ -205,6 +248,12 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
               </h3>
               <button className="btn glass p-1" onClick={() => setShowPaymentModal(false)}><PlusCircle style={{ transform: 'rotate(45deg)' }} size={20} /></button>
             </div>
+            <h3>{isDelivery ? 'Registrar Pago de Clínica' : 'Registrar Cobro al Paciente'}</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+              {isDelivery 
+                ? 'Ingresa el monto que la clínica te ha entregado para este tratamiento.'
+                : 'Registra el abono realizado por el paciente para su tratamiento.'}
+            </p>
             
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.2rem' }}>
               Tratamiento Activo: <strong>{activeTreatment?.description}</strong>

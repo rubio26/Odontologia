@@ -16,6 +16,7 @@ interface Budget {
   status: 'draft' | 'active' | 'completed';
   odontogram_data?: Record<number, any>;
   created_at: string;
+  clinic_id?: string;
 }
 
 export const BudgetManager = ({ patientId, profile, patientName, patientPhone, doctorName, onStartTreatment }: { patientId: string, profile: any, patientName: string, patientPhone?: string, doctorName?: string, onStartTreatment?: () => void }) => {
@@ -205,6 +206,7 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
           initial_state: budget.odontogram_data || {},
           total_amount: budget.total_cost || 0,
           paid_amount: 0,
+          clinic_id: budget.clinic_id || null,
           created_at: new Date().toISOString()
         }]);
 
