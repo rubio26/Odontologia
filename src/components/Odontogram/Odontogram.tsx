@@ -7,7 +7,7 @@ import './Odontogram.css';
 const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
 const lowerTeeth = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
-export const Odontogram = ({ patientId }: { patientId?: string }) => {
+export const Odontogram = ({ patientId, profile }: { patientId?: string, profile: any }) => {
   const [data, setData] = useState<Record<number, Record<string, string>>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -38,6 +38,7 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
       .from('treatments')
       .select('*')
       .eq('patient_id', patientId)
+      .eq('doctor_id', profile.id)
       .order('created_at', { ascending: false });
     
     if (list) {
@@ -61,6 +62,7 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
           .from('odontograms')
           .select('data')
           .eq('patient_id', patientId)
+          .eq('doctor_id', profile.id)
           .single();
         
         setData(odontogram?.data || {});
@@ -86,13 +88,14 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
         .from('odontograms')
         .upsert({ 
           patient_id: patientId, 
+          doctor_id: profile.id,
           data,
           updated_at: new Date().toISOString()
         }, { onConflict: 'patient_id' });
 
       if (error) throw error;
 
-       const { data: currentO } = await supabase.from('odontograms').select('id').eq('patient_id', patientId).single();
+       const { data: currentO } = await supabase.from('odontograms').select('id').eq('patient_id', patientId).eq('doctor_id', profile.id).single();
        if (currentO) {
          await supabase.from('odontogram_history').insert({
            odontogram_id: currentO.id,
@@ -134,14 +137,16 @@ export const Odontogram = ({ patientId }: { patientId?: string }) => {
           final_state: data,
           finished_at: new Date().toISOString()
         })
-        .eq('id', activeTreatment.id);
+        .eq('id', activeTreatment.id)
+        .eq('doctor_id', profile.id);
 
       if (treatmentError) throw treatmentError;
 
       const { error: clearError } = await supabase
         .from('odontograms')
         .update({ data: {}, updated_at: new Date().toISOString() })
-        .eq('patient_id', patientId);
+        .eq('patient_id', patientId)
+        .eq('doctor_id', profile.id);
 
       if (clearError) throw clearError;
 

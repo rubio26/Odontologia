@@ -27,12 +27,14 @@ import { DollarSign } from 'lucide-react';
 
 export const PatientDetail = ({ 
   patient, 
+  profile,
   doctorName,
   onBack, 
   defaultTab = 'clinical', 
   autoAddNew = false 
 }: { 
   patient: any, 
+  profile: any,
   doctorName?: string,
   onBack: () => void, 
   defaultTab?: string, 
@@ -58,7 +60,8 @@ export const PatientDetail = ({
           birth_date: editedPatient.birth_date,
           address: editedPatient.address
         })
-        .eq('id', patient.id);
+        .eq('id', patient.id)
+        .eq('doctor_id', profile.id);
 
       if (error) throw error;
       setIsEditing(false);
@@ -197,25 +200,25 @@ export const PatientDetail = ({
           <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
             <MapPinIcon size={12} /> {locationFilter === 'all' ? 'Mostrando todo el historial' : `Filtrado por: ${locationFilter}`}
           </p>
-          <Odontogram patientId={patient.id} />
+          <Odontogram patientId={patient.id} profile={profile} />
         </div>
       )}
 
       {activeTab === 'evolution' && (
         <div style={{ padding: '1rem' }}>
-          <ClinicalEvolution patientId={patient.id} autoAddNew={autoAddNew} />
+          <ClinicalEvolution patientId={patient.id} profile={profile} autoAddNew={autoAddNew} />
         </div>
       )}
 
       {activeTab === 'history' && (
         <div style={{ padding: '1rem' }}>
-          <ClinicalHistory patientId={patient.id} />
+          <ClinicalHistory patientId={patient.id} profile={profile} />
         </div>
       )}
 
       {activeTab === 'gallery' && (
         <div style={{ padding: '1rem' }}>
-          <PhotoGallery patientId={patient.id} />
+          <PhotoGallery patientId={patient.id} profile={profile} />
         </div>
       )}
 
@@ -229,6 +232,7 @@ export const PatientDetail = ({
         <div style={{ padding: '1rem' }}>
           <BudgetManager 
             patientId={patient.id} 
+            profile={profile}
             patientName={patient.full_name} 
             patientPhone={patient.phone} 
             doctorName={doctorName}
@@ -239,13 +243,13 @@ export const PatientDetail = ({
 
       {activeTab === 'archive' && (
         <div style={{ padding: '1rem' }}>
-          <TreatmentArchive patientId={patient.id} />
+          <TreatmentArchive patientId={patient.id} profile={profile} />
         </div>
       )}
 
       {activeTab === 'payments' && (
         <div style={{ padding: '1rem' }}>
-          <TreatmentPayments patientId={patient.id} />
+          <TreatmentPayments patientId={patient.id} profile={profile} />
         </div>
       )}
     </div>

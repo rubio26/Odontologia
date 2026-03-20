@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Camera, Grid, Maximize2, Share2, MousePointer2, FileSearch, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-export const PhotoGallery = ({ patientId }: { patientId: string }) => {
+export const PhotoGallery = ({ patientId, profile }: { patientId: string, profile: any }) => {
   const [view, setView] = useState<'grid' | 'compare'>('grid');
   const [category, setCategory] = useState<'photos' | 'xrays'>('photos');
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,8 @@ export const PhotoGallery = ({ patientId }: { patientId: string }) => {
       const { data, error } = await supabase
         .from('patient_images')
         .select('*')
-        .eq('patient_id', patientId);
+        .eq('patient_id', patientId)
+        .eq('doctor_id', profile.id);
 
       if (error) throw error;
       if (data) {
@@ -60,6 +61,7 @@ export const PhotoGallery = ({ patientId }: { patientId: string }) => {
         .from('patient_images')
         .insert({
           patient_id: patientId,
+          doctor_id: profile.id,
           url: publicUrl,
           category,
           type: category === 'photos' ? 'Nueva Foto' : 'Nueva Placa'
@@ -98,7 +100,8 @@ export const PhotoGallery = ({ patientId }: { patientId: string }) => {
       const { error } = await supabase
         .from('patient_images')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('doctor_id', profile.id);
 
       if (error) throw error;
 

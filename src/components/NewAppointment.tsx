@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Calendar, Clock, User, FileText, Save, ArrowLeft, FileSpreadsheet, Sparkles, CheckCircle2 } from 'lucide-react';
 
-export const NewAppointment = () => {
+export const NewAppointment = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -24,8 +24,8 @@ export const NewAppointment = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: patientsData } = await supabase.from('patients').select('id, full_name').order('full_name');
-      const { data: clinicsData } = await supabase.from('clinics').select('*').order('is_home', { ascending: false });
+      const { data: patientsData } = await supabase.from('patients').select('id, full_name').eq('doctor_id', profile.id).order('full_name');
+      const { data: clinicsData } = await supabase.from('clinics').select('*').eq('doctor_id', profile.id).order('is_home', { ascending: false });
       
       if (patientsData) setPatients(patientsData);
       if (clinicsData) {
@@ -65,7 +65,7 @@ export const NewAppointment = () => {
         }
         const { data: patient, error: pError } = await supabase
           .from('patients')
-          .insert([newPatientData])
+          .insert([{ ...newPatientData, doctor_id: profile.id }])
           .select()
           .single();
         
@@ -81,6 +81,7 @@ export const NewAppointment = () => {
       const end_time = new Date(new Date(start_time).getTime() + 60 * 60 * 1000).toISOString();
 
       const { error } = await supabase.from('appointments').insert({
+        doctor_id: profile.id,
         patient_id: patientId,
         clinic_id: formData.clinic_id || null,
         start_time,

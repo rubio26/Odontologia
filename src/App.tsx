@@ -142,6 +142,7 @@ const PatientsPage = ({ profile }: { profile: any }) => {
     return (
       <PatientDetail 
         patient={selectedPatient} 
+        profile={profile}
         doctorName={profile?.full_name}
         onBack={() => {
           setSelectedPatient(null);
@@ -158,12 +159,12 @@ const PatientsPage = ({ profile }: { profile: any }) => {
     <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
       <h1>Pacientes</h1>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>Gestión de expedientes y registros clínicos.</p>
-      <PatientSearch onSelect={setSelectedPatient} />
+      <PatientSearch onSelect={setSelectedPatient} profile={profile} />
     </div>
   );
 };
 
-const Agenda = () => <HybridAgenda />;
+const Agenda = ({ profile }: { profile: any }) => <HybridAgenda profile={profile} />;
 const Finance = () => <Financials />;
 const Ops = ({ profile }: { profile: any }) => <Operations profile={profile} />;
 
@@ -292,11 +293,11 @@ const App = () => {
         <main className="page-content" key={window.location.pathname}>
           <Routes>
             <Route path="/" element={<Dashboard profile={profile} user={session?.user} />} />
-            <Route path="/new-appointment" element={<NewAppointment />} />
-            <Route path="/new-budget" element={<NewBudgetWizard />} />
-            <Route path="/pending" element={<PendingTreatments />} />
+            <Route path="/new-appointment" element={<NewAppointment profile={profile} />} />
+            <Route path="/new-budget" element={<NewBudgetWizard profile={profile} />} />
+            <Route path="/pending" element={<PendingTreatments profile={profile} />} />
             <Route path="/patients" element={<PatientsPage profile={profile} />} />
-            <Route path="/agenda" element={<Agenda />} />
+            <Route path="/agenda" element={<Agenda profile={profile} />} />
             <Route path="/finance" element={<Finance />} />
             <Route path="/ops" element={<Ops profile={profile} />} />
             <Route 

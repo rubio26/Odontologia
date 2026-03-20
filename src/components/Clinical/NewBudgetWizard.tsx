@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight, Save, Plus, Trash2, User, CheckCircle, Calculato
 const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
 const lowerTeeth = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
-export const NewBudgetWizard = () => {
+export const NewBudgetWizard = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -53,6 +53,7 @@ export const NewBudgetWizard = () => {
     try {
       const { error } = await supabase.from('budgets').insert({
         patient_id: selectedPatient.id,
+        doctor_id: profile.id,
         description: description || 'Plan de Tratamiento',
         items,
         total_cost: total,
@@ -93,7 +94,7 @@ export const NewBudgetWizard = () => {
             <User size={48} color="var(--primary)" style={{ marginBottom: '1rem' }} />
             <h3>Seleccionar Paciente</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Busca el paciente para iniciar su cotización.</p>
-            <PatientSearch onSelect={(p) => { setSelectedPatient(p); setStep(2); }} />
+            <PatientSearch onSelect={(p) => { setSelectedPatient(p); setStep(2); }} profile={profile} />
           </div>
         </div>
       )}

@@ -3,7 +3,7 @@ import { MapPin, Clock, Calendar as CalendarIcon, Phone, CheckCircle2, ChevronLe
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
-export const HybridAgenda = () => {
+export const HybridAgenda = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewDate, setViewDate] = useState(new Date()); // For month navigation
@@ -42,6 +42,7 @@ export const HybridAgenda = () => {
           patients (id, full_name, phone),
           clinics (id, name, address)
         `)
+        .eq('doctor_id', profile.id)
         .neq('status', 'cancelled')
         .gte('start_time', start.toISOString())
         .lt('start_time', dayAfter.toISOString())
@@ -71,6 +72,7 @@ export const HybridAgenda = () => {
       const { data } = await supabase
         .from('appointments')
         .select('start_time')
+        .eq('doctor_id', profile.id)
         .neq('status', 'cancelled')
         .gte('start_time', firstDay)
         .lte('start_time', lastDay);
@@ -134,7 +136,7 @@ export const HybridAgenda = () => {
 
   const updateAptStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase.from('appointments').update({ status }).eq('id', id);
+      const { error } = await supabase.from('appointments').update({ status }).eq('id', id).eq('doctor_id', profile.id);
       if (error) throw error;
       
       if (status === 'cancelled') {

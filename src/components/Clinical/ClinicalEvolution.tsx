@@ -22,9 +22,11 @@ interface Budget {
 
 export const ClinicalEvolution = ({ 
   patientId, 
+  profile,
   autoAddNew = false 
 }: { 
   patientId: string, 
+  profile: any,
   autoAddNew?: boolean 
 }) => {
   const [notes, setNotes] = useState<EvolutionNote[]>([]);
@@ -57,6 +59,7 @@ export const ClinicalEvolution = ({
       .from('evolution_notes')
       .select('*')
       .eq('patient_id', patientId)
+      .eq('doctor_id', profile.id)
       .order('session_date', { ascending: false });
 
     if (!error && data) {
@@ -70,6 +73,7 @@ export const ClinicalEvolution = ({
       .from('budgets')
       .select('id, description')
       .eq('patient_id', patientId)
+      .eq('doctor_id', profile.id)
       .eq('status', 'active');
     
     if (data) setBudgets(data);
@@ -81,6 +85,7 @@ export const ClinicalEvolution = ({
 
     const { error } = await supabase.from('evolution_notes').insert({
       patient_id: patientId,
+      doctor_id: profile.id,
       procedure_notes: newNote.procedure_notes,
       amount_paid: newNote.amount_paid,
       pa_max: newNote.pa_max,
@@ -106,8 +111,9 @@ export const ClinicalEvolution = ({
       fetchNotes();
       
       if (newNote.amount_paid > 0) {
-        const { data: homeClinic } = await supabase.from('clinics').select('id').eq('is_home', true).maybeSingle();
+        const { data: homeClinic } = await supabase.from('clinics').select('id').eq('doctor_id', profile.id).eq('is_home', true).maybeSingle();
         await supabase.from('transactions').insert({
+          doctor_id: profile.id,
           patient_id: patientId,
           description: `Pago en sesión: ${newNote.procedure_notes.substring(0, 30)}...`,
           amount_pyg: newNote.amount_paid,

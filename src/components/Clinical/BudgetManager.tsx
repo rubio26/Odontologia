@@ -18,7 +18,7 @@ interface Budget {
   created_at: string;
 }
 
-export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName, onStartTreatment }: { patientId: string, patientName: string, patientPhone?: string, doctorName?: string, onStartTreatment?: () => void }) => {
+export const BudgetManager = ({ patientId, profile, patientName, patientPhone, doctorName, onStartTreatment }: { patientId: string, profile: any, patientName: string, patientPhone?: string, doctorName?: string, onStartTreatment?: () => void }) => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -43,6 +43,7 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
       .from('budgets')
       .select('*')
       .eq('patient_id', patientId)
+      .eq('doctor_id', profile.id)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -81,6 +82,7 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
       const total = calculateTotal();
       const { error } = await supabase.from('budgets').insert({
         patient_id: patientId,
+        doctor_id: profile.id,
         description: newBudget.description || 'Plan de Tratamiento',
         items: newBudget.items,
         total_cost: total,
@@ -196,6 +198,7 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
         .from('treatments')
         .insert([{
           patient_id: patientId,
+          doctor_id: profile.id,
           budget_id: budget.id,
           description: budget.description,
           status: 'active',
@@ -213,13 +216,14 @@ export const BudgetManager = ({ patientId, patientName, patientPhone, doctorName
           .from('odontograms')
           .upsert({ 
             patient_id: patientId, 
+            doctor_id: profile.id,
             data: budget.odontogram_data,
             updated_at: new Date().toISOString()
           }, { onConflict: 'patient_id' });
       }
 
       // 3. Mark budget as completed
-      await supabase.from('budgets').update({ status: 'completed' }).eq('id', budget.id);
+      await supabase.from('budgets').update({ status: 'completed' }).eq('id', budget.id).eq('doctor_id', profile.id);
 
       alert('¡Tratamiento iniciado! Ahora puedes seguir la evolución en el Odontograma.');
       fetchBudgets();

@@ -12,7 +12,7 @@ interface ClinicalHistoryData {
   habits: string;
 }
 
-export const ClinicalHistory = ({ patientId }: { patientId: string }) => {
+export const ClinicalHistory = ({ patientId, profile }: { patientId: string, profile: any }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<ClinicalHistoryData>({
@@ -35,6 +35,7 @@ export const ClinicalHistory = ({ patientId }: { patientId: string }) => {
         .from('clinical_histories')
         .select('*')
         .eq('patient_id', patientId)
+        .eq('doctor_id', profile.id)
         .single();
       
       if (error && error.code !== 'PGRST116') {
@@ -58,6 +59,7 @@ export const ClinicalHistory = ({ patientId }: { patientId: string }) => {
         .from('clinical_histories')
         .upsert({
           patient_id: patientId,
+          doctor_id: profile.id,
           ...data,
           updated_at: new Date().toISOString()
         }, { onConflict: 'patient_id' });

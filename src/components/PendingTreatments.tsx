@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, User, ChevronRight, AlertCircle, Clock } from 'lucide-react';
 
-export const PendingTreatments = () => {
+export const PendingTreatments = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<any[]>([]);
@@ -17,7 +17,8 @@ export const PendingTreatments = () => {
     try {
       const { data: odontograms, error } = await supabase
         .from('odontograms')
-        .select('patient_id, data, patients(full_name, phone, document_id)');
+        .select('patient_id, data, patients(full_name, phone, document_id)')
+        .eq('doctor_id', profile.id);
 
       if (error) throw error;
 

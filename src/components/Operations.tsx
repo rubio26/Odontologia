@@ -42,6 +42,7 @@ export const Operations = ({ profile }: { profile: any }) => {
           patients (full_name),
           laboratories (name)
         `)
+        .eq('doctor_id', profile.id)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -51,6 +52,7 @@ export const Operations = ({ profile }: { profile: any }) => {
       const { data: clinicsData } = await supabase
         .from('clinics')
         .select('*')
+        .eq('doctor_id', profile.id)
         .order('is_home', { ascending: false });
       
       if (clinicsData) setClinics(clinicsData);
@@ -59,6 +61,7 @@ export const Operations = ({ profile }: { profile: any }) => {
       const { data: patientsData } = await supabase
         .from('patients')
         .select('id, full_name')
+        .eq('doctor_id', profile.id)
         .order('full_name');
       
       if (patientsData) setPatients(patientsData);
@@ -67,6 +70,7 @@ export const Operations = ({ profile }: { profile: any }) => {
       const { data: labsReg } = await supabase
         .from('laboratories')
         .select('*')
+        .eq('doctor_id', profile.id)
         .order('name');
       
       if (labsReg) setLaboratories(labsReg);
@@ -92,12 +96,14 @@ export const Operations = ({ profile }: { profile: any }) => {
         const { data: trans } = await supabase
           .from('transactions')
           .select('*, patients(full_name), clinics(name)')
+          .eq('doctor_id', profile.id)
           .gte('created_at', start)
           .lte('created_at', end);
         
         const { data: treats } = await supabase
           .from('treatments')
           .select('*, patients(full_name)')
+          .eq('doctor_id', profile.id)
           .eq('status', 'active');
         
         const pending = treats?.filter(t => (t.total_amount - t.paid_amount) > 0) || [];
@@ -117,6 +123,7 @@ export const Operations = ({ profile }: { profile: any }) => {
         const { data: trans } = await supabase
           .from('transactions')
           .select('*, patients(full_name), clinics(name)')
+          .eq('doctor_id', profile.id)
           .eq('type', 'income');
         
         const byClinic: Record<string, number> = {};
@@ -140,6 +147,7 @@ export const Operations = ({ profile }: { profile: any }) => {
         const { data: labs } = await supabase
           .from('lab_orders')
           .select('*, patients(full_name), laboratories(name)')
+          .eq('doctor_id', profile.id)
           .order('created_at', { ascending: false });
         
         reportData = {
@@ -350,9 +358,7 @@ export const Operations = ({ profile }: { profile: any }) => {
     e.preventDefault();
     try {
       const table = registryType === 'clinics' ? 'clinics' : 'laboratories';
-      const payload = registryType === 'clinics' 
-        ? { ...newEntry, doctor_id: profile.id, is_home: clinics.length === 0 }
-        : newEntry;
+      const payload = { ...newEntry, doctor_id: profile.id, is_home: registryType === 'clinics' ? clinics.length === 0 : false };
 
       const { data, error } = await supabase
         .from(table)
@@ -376,7 +382,7 @@ export const Operations = ({ profile }: { profile: any }) => {
     if (!confirm('¿Seguro que quieres eliminar este registro?')) return;
     try {
       const table = type === 'clinics' ? 'clinics' : 'laboratories';
-      const { error } = await supabase.from(table).delete().eq('id', id);
+      const { error } = await supabase.from(table).delete().eq('id', id).eq('doctor_id', profile.id);
       if (error) throw error;
       
       if (type === 'clinics') setClinics(clinics.filter(c => c.id !== id));
@@ -389,7 +395,7 @@ export const Operations = ({ profile }: { profile: any }) => {
   const handleSetHome = async (id: string) => {
     try {
       await supabase.from('clinics').update({ is_home: false }).eq('doctor_id', profile.id);
-      const { error } = await supabase.from('clinics').update({ is_home: true }).eq('id', id);
+      const { error } = await supabase.from('clinics').update({ is_home: true }).eq('id', id).eq('doctor_id', profile.id);
       if (error) throw error;
       setClinics(clinics.map(c => ({ ...c, is_home: c.id === id })));
     } catch (err: any) {
@@ -402,7 +408,7 @@ export const Operations = ({ profile }: { profile: any }) => {
     try {
       const { data, error } = await supabase
         .from('lab_orders')
-        .insert([newLabOrder])
+        .insert([{ ...newLabOrder, doctor_id: profile.id }])
         .select(`*, patients(full_name), laboratories(name)`)
         .single();
 

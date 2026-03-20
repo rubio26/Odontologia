@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Calendar, CheckCircle2, FlaskConical, History } from 'lucide-react';
 
-export const TreatmentArchive = ({ patientId }: { patientId: string }) => {
+export const TreatmentArchive = ({ patientId, profile }: { patientId: string, profile: any }) => {
   const [treatments, setTreatments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,6 +12,7 @@ export const TreatmentArchive = ({ patientId }: { patientId: string }) => {
         .from('treatments')
         .select('*')
         .eq('patient_id', patientId)
+        .eq('doctor_id', profile.id)
         .eq('status', 'finished')
         .order('finished_at', { ascending: false });
       

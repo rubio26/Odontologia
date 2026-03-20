@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Search, UserPlus, CreditCard, ChevronRight, X, Smartphone, User, IdCard, Briefcase, MapPin, Loader2, Save } from 'lucide-react';
 
-export const PatientSearch = ({ onSelect }: { onSelect: (patient: any) => void }) => {
+export const PatientSearch = ({ onSelect, profile }: { onSelect: (patient: any) => void, profile: any }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export const PatientSearch = ({ onSelect }: { onSelect: (patient: any) => void }
     try {
       const { data, error } = await supabase
         .from('patients')
-        .insert([newPatient])
+        .insert([{ ...newPatient, doctor_id: profile.id }])
         .select()
         .single();
 
@@ -44,6 +44,7 @@ export const PatientSearch = ({ onSelect }: { onSelect: (patient: any) => void }
       let queryBuilder = supabase
         .from('patients')
         .select('*')
+        .eq('doctor_id', profile.id)
         .order('full_name', { ascending: true });
 
       if (query.length > 0) {

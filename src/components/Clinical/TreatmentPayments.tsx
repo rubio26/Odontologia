@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { DollarSign, PlusCircle, History, Receipt, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
+export const TreatmentPayments = ({ patientId, profile }: { patientId: string, profile: any }) => {
   const [activeTreatment, setActiveTreatment] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
   }, [patientId]);
 
   const fetchClinics = async () => {
-    const { data } = await supabase.from('clinics').select('*').order('is_home', { ascending: false });
+    const { data } = await supabase.from('clinics').select('*').eq('doctor_id', profile.id).order('is_home', { ascending: false });
     if (data) {
       setClinics(data);
       if (data.length > 0) setSelectedClinicId(data[0].id);
@@ -35,6 +35,7 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
         .from('treatments')
         .select('*')
         .eq('patient_id', patientId)
+        .eq('doctor_id', profile.id)
         .eq('status', 'active')
         .maybeSingle();
       
@@ -45,6 +46,7 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
         .from('transactions')
         .select('*, clinics(name)')
         .eq('patient_id', patientId)
+        .eq('doctor_id', profile.id)
         .eq('category', 'Tratamiento')
         .order('created_at', { ascending: false });
       
@@ -67,6 +69,7 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
         .from('transactions')
         .insert([{
           patient_id: patientId,
+          doctor_id: profile.id,
           description: `Pago: ${activeTreatment.description} - ${paymentNote}`,
           amount_pyg: amount,
           type: 'income',
@@ -82,7 +85,8 @@ export const TreatmentPayments = ({ patientId }: { patientId: string }) => {
       const { error: treatError } = await supabase
         .from('treatments')
         .update({ paid_amount: newPaid })
-        .eq('id', activeTreatment.id);
+        .eq('id', activeTreatment.id)
+        .eq('doctor_id', profile.id);
 
       if (treatError) throw treatError;
 
