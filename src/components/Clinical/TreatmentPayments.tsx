@@ -240,8 +240,8 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
 
       {/* Payment Modal */}
       {showPaymentModal && (
-        <div className="auth-container" style={{ position: 'fixed', zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
-          <div className="auth-card glass" style={{ width: '90%', maxWidth: '400px', borderTop: '4px solid var(--primary)' }}>
+        <div className="fixed-center" style={{ zIndex: 9999 }}>
+          <div className="card glass" style={{ width: '90%', maxWidth: '400px', borderTop: '4px solid var(--primary)', position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <DollarSign size={20} color="var(--primary)" /> Registrar Cobro
