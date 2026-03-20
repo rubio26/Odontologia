@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Search, UserPlus, CreditCard, ChevronRight, X, Smartphone, User, IdCard, Briefcase, MapPin, Loader2, Save } from 'lucide-react';
+import { Search, UserPlus, CreditCard, ChevronRight, X, Smartphone, User, IdCard, Loader2, Save } from 'lucide-react';
 
 export const PatientSearch = ({ onSelect, profile }: { onSelect: (patient: any) => void, profile: any }) => {
   const [query, setQuery] = useState('');
@@ -11,9 +11,7 @@ export const PatientSearch = ({ onSelect, profile }: { onSelect: (patient: any) 
   const [newPatient, setNewPatient] = useState({
     full_name: '',
     document_id: '',
-    phone: '',
-    profession: '',
-    address: ''
+    phone: ''
   });
 
   const handleCreatePatient = async (e: React.FormEvent) => {
@@ -29,7 +27,7 @@ export const PatientSearch = ({ onSelect, profile }: { onSelect: (patient: any) 
       if (error) throw error;
       
       setIsAdding(false);
-      setNewPatient({ full_name: '', document_id: '', phone: '', profession: '', address: '' });
+      setNewPatient({ full_name: '', document_id: '', phone: '' });
       if (data) onSelect(data);
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -118,37 +116,15 @@ export const PatientSearch = ({ onSelect, profile }: { onSelect: (patient: any) 
                   required
                 />
               </div>
-              <div className="input-group">
-                <IdCard size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Cédula / ID" 
-                  value={newPatient.document_id}
-                  onChange={e => setNewPatient({...newPatient, document_id: e.target.value})}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="input-row">
-              <div className="input-group">
-                <Briefcase size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Profesión" 
-                  value={newPatient.profession}
-                  onChange={e => setNewPatient({...newPatient, profession: e.target.value})}
-                />
-              </div>
-              <div className="input-group">
-                <MapPin size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Dirección" 
-                  value={newPatient.address}
-                  onChange={e => setNewPatient({...newPatient, address: e.target.value})}
-                />
-              </div>
+            <div className="input-group">
+              <IdCard size={18} />
+              <input 
+                type="text" 
+                placeholder="Cédula / ID" 
+                value={newPatient.document_id}
+                onChange={e => setNewPatient({...newPatient, document_id: e.target.value})}
+                required
+              />
             </div>
 
             <button type="submit" className="btn btn-primary w-full" disabled={saving} style={{ marginTop: '1rem' }}>

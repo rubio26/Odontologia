@@ -56,9 +56,7 @@ export const PatientDetail = ({
           full_name: editedPatient.full_name,
           document_id: editedPatient.document_id,
           phone: editedPatient.phone,
-          profession: editedPatient.profession,
-          birth_date: editedPatient.birth_date,
-          address: editedPatient.address
+          birth_date: editedPatient.birth_date
         })
         .eq('id', patient.id)
         .eq('doctor_id', profile.id);
@@ -70,9 +68,7 @@ export const PatientDetail = ({
       patient.full_name = editedPatient.full_name;
       patient.document_id = editedPatient.document_id;
       patient.phone = editedPatient.phone;
-      patient.profession = editedPatient.profession;
       patient.birth_date = editedPatient.birth_date;
-      patient.address = editedPatient.address;
     } catch (err: any) {
       alert('Error: ' + err.message);
     } finally {
@@ -91,7 +87,6 @@ export const PatientDetail = ({
             <h2 style={{ fontSize: '1.2rem', margin: 0 }}>{patient.full_name}</h2>
             <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               <span>ID: {patient.document_id}</span>
-              <span>• {patient.profession || 'Profesión n/a'}</span>
               <span>• {patient.phone}</span>
             </div>
           </div>
@@ -139,16 +134,6 @@ export const PatientDetail = ({
                   onChange={e => setEditedPatient({...editedPatient, document_id: e.target.value})}
                 />
               </div>
-            </div>
-
-            <div className="input-group">
-              <MapPinIcon size={18} />
-              <input 
-                type="text" 
-                placeholder="Dirección" 
-                value={editedPatient.address}
-                onChange={e => setEditedPatient({...editedPatient, address: e.target.value})}
-              />
             </div>
 
             <button type="submit" className="btn btn-primary w-full" disabled={saving}>
