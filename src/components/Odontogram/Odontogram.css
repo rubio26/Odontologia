@@ -43,11 +43,18 @@
   stroke-width: 2;
 }
 
-.surface-path.caries { fill: var(--error); fill-opacity: 0.8; stroke: #800; }
-.surface-path.done { fill: var(--success); fill-opacity: 0.8; stroke: #064; }
-.surface-path.crown { fill: var(--primary); fill-opacity: 0.6; stroke: var(--primary); }
-.surface-path.implant { fill: #8B5CF6; fill-opacity: 0.8; }
-.surface-path.protesis { fill: #D946EF; fill-opacity: 0.4; }
+.surface-path.restauracion { fill: #EF4444; fill-opacity: 0.85; stroke: #800; }
+.surface-path.extraccion   { fill: #F97316; fill-opacity: 0.85; stroke: #8B3A0F; }
+.surface-path.implant      { fill: #8B5CF6; fill-opacity: 0.85; stroke: #5B21B6; }
+.surface-path.endodoncia   { fill: #EC4899; fill-opacity: 0.85; stroke: #9D174D; }
+.surface-path.incrustacion { fill: #F59E0B; fill-opacity: 0.85; stroke: #92400E; }
+.surface-path.corona       { fill: var(--primary); fill-opacity: 0.75; stroke: var(--primary); }
+.surface-path.limpieza     { fill: #06B6D4; fill-opacity: 0.75; stroke: #0E7490; }
+.surface-path.protesis     { fill: #D946EF; fill-opacity: 0.5; stroke: #86198F; }
+.surface-path.done         { fill: var(--success); fill-opacity: 0.8; stroke: #064; }
+/* Legacy support */
+.surface-path.caries       { fill: #EF4444; fill-opacity: 0.85; stroke: #800; }
+.surface-path.crown        { fill: var(--primary); fill-opacity: 0.75; stroke: var(--primary); }
 
 .absent .tooth-svg {
   opacity: 0.1;

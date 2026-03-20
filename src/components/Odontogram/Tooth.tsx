@@ -7,11 +7,14 @@ interface ToothProps {
 }
 
 export const Tooth: React.FC<ToothProps> = ({ id, surfaces, onClick }) => {
-  const isCrown = Object.values(surfaces).every(s => s === 'crown');
-  const isImplant = Object.values(surfaces).every(s => s === 'implant');
-  const isAbsent = Object.values(surfaces).every(s => s === 'absent');
-  const isProtesis = Object.values(surfaces).every(s => s === 'protesis');
-  const isExodoncia = Object.values(surfaces).every(s => s === 'exodoncia');
+  const isCorona       = Object.values(surfaces).every(s => s === 'corona'  || s === 'crown');
+  const isImplant      = Object.values(surfaces).every(s => s === 'implant');
+  const isAbsent       = Object.values(surfaces).every(s => s === 'absent');
+  const isProtesis     = Object.values(surfaces).every(s => s === 'protesis');
+  const isExtraccion   = Object.values(surfaces).every(s => s === 'extraccion' || s === 'exodoncia');
+  const isEndodoncia   = Object.values(surfaces).some(s => s === 'endodoncia');
+  const isLimpieza     = Object.values(surfaces).every(s => s === 'limpieza');
+  const isIncrustacion = Object.values(surfaces).every(s => s === 'incrustacion');
 
   return (
     <div className={`tooth-container ${isAbsent ? 'absent' : ''}`} style={{ textAlign: 'center' }}>
@@ -63,7 +66,7 @@ export const Tooth: React.FC<ToothProps> = ({ id, surfaces, onClick }) => {
             </g>
           )}
 
-          {isCrown && (
+          {isCorona && (
             <path d="M15,20 L85,20 L80,50 L20,50 Z" fill="var(--primary)" fillOpacity="0.4" stroke="var(--primary)" />
           )}
           
@@ -78,11 +81,23 @@ export const Tooth: React.FC<ToothProps> = ({ id, surfaces, onClick }) => {
             <path d="M10,40 Q50,30 90,40" stroke="#D946EF" strokeWidth="4" fill="none" strokeDasharray="4 2" />
           )}
 
-          {isExodoncia && (
+          {isExtraccion && (
             <g>
-              <line x1="20" y1="20" x2="80" y2="80" stroke="#EF4444" strokeWidth="8" strokeLinecap="round" />
-              <line x1="80" y1="20" x2="20" y2="80" stroke="#EF4444" strokeWidth="8" strokeLinecap="round" />
+              <line x1="20" y1="20" x2="80" y2="80" stroke="#F97316" strokeWidth="8" strokeLinecap="round" />
+              <line x1="80" y1="20" x2="20" y2="80" stroke="#F97316" strokeWidth="8" strokeLinecap="round" />
             </g>
+          )}
+
+          {isEndodoncia && (
+            <circle cx="50" cy="60" r="10" fill="#EC4899" fillOpacity="0.9" stroke="#9D174D" strokeWidth="2" />
+          )}
+
+          {isLimpieza && (
+            <path d="M15,60 Q30,50 50,60 Q70,70 85,60" stroke="#06B6D4" strokeWidth="4" fill="none" />
+          )}
+
+          {isIncrustacion && (
+            <polygon points="50,25 70,50 50,75 30,50" fill="#F59E0B" fillOpacity="0.5" stroke="#92400E" strokeWidth="2" />
           )}
         </svg>
       </div>

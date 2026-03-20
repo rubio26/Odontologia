@@ -11,19 +11,22 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
   const [data, setData] = useState<Record<number, Record<string, string>>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedState, setSelectedState] = useState('caries');
+  const [selectedState, setSelectedState] = useState('restauracion');
   const [treatments, setTreatments] = useState<any[]>([]);
   const [selectedTreatmentId, setSelectedTreatmentId] = useState<string>('active');
   const [activeTreatment, setActiveTreatment] = useState<any>(null);
 
   const states = [
-    { id: 'caries', label: 'Caries', color: '#EF4444' },
-    { id: 'done', label: 'Realizado', color: 'var(--success)' },
-    { id: 'crown', label: 'Corona', color: 'var(--primary)' },
-    { id: 'implant', label: 'Implante', color: '#8B5CF6' },
-    { id: 'absent', label: 'Ausente', color: '#333' },
-    { id: 'protesis', label: 'Prótesis', color: '#D946EF' },
-    { id: 'exodoncia', label: 'Exodoncia', color: '#EF4444' }
+    { id: 'restauracion', label: 'Restauración de caries', color: '#EF4444' },
+    { id: 'extraccion',   label: 'Extracción',             color: '#F97316' },
+    { id: 'implant',      label: 'Implante',               color: '#8B5CF6' },
+    { id: 'endodoncia',   label: 'Endodoncia',             color: '#EC4899' },
+    { id: 'incrustacion', label: 'Incrustación',           color: '#F59E0B' },
+    { id: 'corona',       label: 'Corona / Perno',         color: 'var(--primary)' },
+    { id: 'limpieza',     label: 'Limpieza de sarro',      color: '#06B6D4' },
+    { id: 'protesis',     label: 'Prótesis',               color: '#D946EF' },
+    { id: 'done',         label: 'Realizado',              color: 'var(--success)' },
+    { id: 'absent',       label: 'Ausente',                color: '#555' },
   ];
 
   useEffect(() => {

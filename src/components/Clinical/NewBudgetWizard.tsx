@@ -19,12 +19,16 @@ export const NewBudgetWizard = ({ profile }: { profile: any }) => {
   const [items, setItems] = useState<{ description: string, price: number }[]>([{ description: '', price: 0 }]);
   const [description, setDescription] = useState('');
   const [numSessions, setNumSessions] = useState(1);
-  const [selectedState, setSelectedState] = useState('caries');
+  const [selectedState, setSelectedState] = useState('restauracion');
 
   const states = [
-    { id: 'caries', label: 'Caries (Planear)', color: '#EF4444' },
-    { id: 'crown', label: 'Corona', color: 'var(--primary)' },
-    { id: 'implant', label: 'Implante', color: '#8B5CF6' },
+    { id: 'restauracion', label: 'Restauración de caries', color: '#EF4444' },
+    { id: 'extraccion',   label: 'Extracción',             color: '#F97316' },
+    { id: 'implant',      label: 'Implante',               color: '#8B5CF6' },
+    { id: 'endodoncia',   label: 'Endodoncia',             color: '#EC4899' },
+    { id: 'incrustacion', label: 'Incrustación',           color: '#F59E0B' },
+    { id: 'corona',       label: 'Corona / Perno',         color: 'var(--primary)' },
+    { id: 'limpieza',     label: 'Limpieza de sarro',      color: '#06B6D4' },
   ];
 
   const handleToothClick = (id: number, surface: string) => {
