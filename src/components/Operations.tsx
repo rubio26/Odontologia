@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User, FileText, Calendar as CalendarIcon, PieChart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User, FileText, Calendar as CalendarIcon, PieChart, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export const Operations = ({ profile }: { profile: any }) => {
+  const navigate = useNavigate();
   const [showIncome, setShowIncome] = useState(false);
   const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [password, setPassword] = useState('');
@@ -711,7 +713,16 @@ export const Operations = ({ profile }: { profile: any }) => {
                     {item.phone && `📱 ${item.phone}`} {item.address && `| 📍 ${item.address}`}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                  {registryType === 'clinics' && (
+                    <button
+                      className="btn btn-outline"
+                      style={{ padding: '0.3rem 0.7rem', fontSize: '0.65rem' }}
+                      onClick={() => navigate(`/clinic/${item.id}`)}
+                    >
+                      <ArrowRight size={12} /> Ver Perfil
+                    </button>
+                  )}
                   {registryType === 'clinics' && !item.is_home && (
                     <button 
                       onClick={() => handleSetHome(item.id)}

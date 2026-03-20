@@ -56,23 +56,32 @@ export const NewAppointment = ({ profile }: { profile: any }) => {
     try {
       let patientId = formData.patient_id;
 
-      // Si es un paciente nuevo, registrarlo primero
-      if (isNewPatient) {
-        if (!newPatientData.full_name) {
-          alert('Por favor, ingresa el nombre del nuevo paciente.');
+      // Para citas de clínica, registrar nuevo paciente si aplica
+      if (formData.type !== 'delivery') {
+        if (isNewPatient) {
+          if (!newPatientData.full_name) {
+            alert('Por favor, ingresa el nombre del nuevo paciente.');
+            setLoading(false);
+            return;
+          }
+          const { data: patient, error: pError } = await supabase
+            .from('patients')
+            .insert([{ ...newPatientData, doctor_id: profile.id }])
+            .select()
+            .single();
+          
+          if (pError) throw pError;
+          patientId = patient.id;
+        } else if (!patientId) {
+          alert('Por favor, selecciona un paciente.');
           setLoading(false);
           return;
         }
-        const { data: patient, error: pError } = await supabase
-          .from('patients')
-          .insert([{ ...newPatientData, doctor_id: profile.id }])
-          .select()
-          .single();
-        
-        if (pError) throw pError;
-        patientId = patient.id;
-      } else if (!patientId) {
-        alert('Por favor, selecciona un paciente.');
+      }
+
+      // Para Delivery, el clinic_id es obligatorio
+      if (formData.type === 'delivery' && !formData.clinic_id) {
+        alert('Por favor, selecciona la clínica para la cita Delivery.');
         setLoading(false);
         return;
       }
@@ -105,12 +114,16 @@ export const NewAppointment = ({ profile }: { profile: any }) => {
   const selectedPatientName = patients.find(p => p.id === formData.patient_id)?.full_name;
 
   if (success) {
+    const clinicName = clinics.find(c => c.id === formData.clinic_id)?.name;
+    const displayName = formData.type === 'delivery' ? (clinicName || 'Clínica') : (selectedPatientName || 'Paciente');
     return (
       <div className="auth-container">
         <div className="auth-card glass" style={{ textAlign: 'center' }}>
           <CheckCircle2 color="var(--success)" size={64} style={{ marginBottom: '1.5rem' }} />
           <h2 style={{ color: 'var(--text-gold)', marginBottom: '1rem' }}>¡Cita Confirmada!</h2>
-          <p style={{ color: 'var(--text-muted)' }}>La cita para {selectedPatientName} ha sido agendada con éxito.</p>
+          <p style={{ color: 'var(--text-muted)' }}>
+            {formData.type === 'delivery' ? `Cita Delivery en ${displayName}` : `La cita para ${displayName}`} ha sido agendada con éxito.
+          </p>
         </div>
       </div>
     );
@@ -134,64 +147,79 @@ export const NewAppointment = ({ profile }: { profile: any }) => {
 
       <form onSubmit={handleSubmit}>
         <div className="card glass" style={{ padding: '2rem', borderTop: '4px solid var(--primary)' }}>
-          {/* Patient Selection Toggle */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.2rem', padding: '0.3rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
-            <button 
-              type="button"
-              className={`btn w-full ${!isNewPatient ? 'btn-primary' : ''}`}
-              style={{ fontSize: '0.75rem', height: '35px', borderRadius: '10px' }}
-              onClick={() => setIsNewPatient(false)}
-            >
-              Paciente Existente
-            </button>
-            <button 
-              type="button"
-              className={`btn w-full ${isNewPatient ? 'btn-primary' : ''}`}
-              style={{ fontSize: '0.75rem', height: '35px', borderRadius: '10px' }}
-              onClick={() => setIsNewPatient(true)}
-            >
-              + Nuevo Paciente
-            </button>
-          </div>
 
-          {/* Patient Input Area */}
-          {!isNewPatient ? (
-            <div className="input-group" style={{ marginBottom: '1.5rem' }}>
-              <User size={18} />
-              <select 
-                required={!isNewPatient}
-                className="input-field"
-                value={formData.patient_id}
-                onChange={e => setFormData({ ...formData, patient_id: e.target.value })}
-                style={{ width: '100%', padding: '0.8rem', background: 'transparent', color: 'white', border: 'none', appearance: 'none' }}
-              >
-                <option value="" disabled style={{ background: '#111' }}>Seleccionar Paciente</option>
-                {patients.map(p => (
-                  <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.full_name}</option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div style={{ animation: 'fadeIn 0.3s ease' }}>
-              <div className="input-group" style={{ marginBottom: '0.8rem' }}>
-                <User size={18} color="var(--success)" />
-                <input 
-                  required
-                  placeholder="Nombre Completo del Paciente" 
-                  className="input-field"
-                  value={newPatientData.full_name}
-                  onChange={e => setNewPatientData({ ...newPatientData, full_name: e.target.value })}
-                />
+          {/* Patient Selection — ONLY for clinic mode */}
+          {formData.type !== 'delivery' && (
+            <>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.2rem', padding: '0.3rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+                <button 
+                  type="button"
+                  className={`btn w-full ${!isNewPatient ? 'btn-primary' : ''}`}
+                  style={{ fontSize: '0.75rem', height: '35px', borderRadius: '10px' }}
+                  onClick={() => setIsNewPatient(false)}
+                >
+                  Paciente Existente
+                </button>
+                <button 
+                  type="button"
+                  className={`btn w-full ${isNewPatient ? 'btn-primary' : ''}`}
+                  style={{ fontSize: '0.75rem', height: '35px', borderRadius: '10px' }}
+                  onClick={() => setIsNewPatient(true)}
+                >
+                  + Nuevo Paciente
+                </button>
               </div>
-              <div className="input-group" style={{ marginBottom: '1.5rem' }}>
-                <Clock size={18} color="var(--success)" />
-                <input 
-                  placeholder="Teléfono / Celular" 
-                  className="input-field"
-                  value={newPatientData.phone}
-                  onChange={e => setNewPatientData({ ...newPatientData, phone: e.target.value })}
-                />
-              </div>
+
+              {/* Patient Input Area */}
+              {!isNewPatient ? (
+                <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                  <User size={18} />
+                  <select 
+                    required={formData.type === 'clinic' && !isNewPatient}
+                    className="input-field"
+                    value={formData.patient_id}
+                    onChange={e => setFormData({ ...formData, patient_id: e.target.value })}
+                    style={{ width: '100%', padding: '0.8rem', background: 'transparent', color: 'white', border: 'none', appearance: 'none' }}
+                  >
+                    <option value="" disabled style={{ background: '#111' }}>Seleccionar Paciente</option>
+                    {patients.map(p => (
+                      <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                  <div className="input-group" style={{ marginBottom: '0.8rem' }}>
+                    <User size={18} color="var(--success)" />
+                    <input 
+                      required
+                      placeholder="Nombre Completo del Paciente" 
+                      className="input-field"
+                      value={newPatientData.full_name}
+                      onChange={e => setNewPatientData({ ...newPatientData, full_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                    <Clock size={18} color="var(--success)" />
+                    <input 
+                      placeholder="Teléfono / Celular" 
+                      className="input-field"
+                      value={newPatientData.phone}
+                      onChange={e => setNewPatientData({ ...newPatientData, phone: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Delivery info banner */}
+          {formData.type === 'delivery' && (
+            <div className="card glass" style={{ marginBottom: '1.5rem', padding: '1rem', borderLeft: '4px solid var(--primary)', background: 'rgba(212,175,55,0.07)' }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-gold)', fontWeight: 600, marginBottom: '0.3rem' }}>🏥 Cita Delivery en Clínica Externa</p>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                Esta cita se registrará con el nombre de la clínica. Los pacientes se gestionan desde el perfil de la clínica.
+              </p>
             </div>
           )}
 

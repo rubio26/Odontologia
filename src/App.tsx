@@ -12,7 +12,7 @@ import { Operations } from './components/Operations';
 import { PendingTreatments } from './components/PendingTreatments.tsx';
 import { NewBudgetWizard } from './components/Clinical/NewBudgetWizard';
 import { Auth } from './components/Auth/Auth';
-
+import { ClinicProfileView } from './components/ClinicProfileView';
 
 const Dashboard = ({ profile, user }: { profile: any, user: any }) => (
   <div style={{ padding: '1.2rem', paddingBottom: '6rem' }}>
@@ -300,6 +300,7 @@ const App = () => {
             <Route path="/agenda" element={<Agenda profile={profile} />} />
             <Route path="/finance" element={<Finance />} />
             <Route path="/ops" element={<Ops profile={profile} />} />
+            <Route path="/clinic/:clinicId" element={<ClinicProfileView profile={profile} />} />
             <Route 
               path="/access" 
               element={profile?.is_admin ? <AccessManagement /> : <Navigate to="/" />} 

@@ -167,22 +167,25 @@ export const HybridAgenda = ({ profile }: { profile: any }) => {
   };
 
   const handleWhatsApp = (apt: any, isToday: boolean) => {
-    const patientName = apt.patients?.full_name || 'Paciente';
+    const isDelivery = apt.type === 'delivery';
+    const patientName = apt.patients?.full_name || 'el paciente';
     const time = new Date(apt.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     const location = apt.clinics?.name || 'el consultorio';
-    const phone = apt.patients?.phone;
+    const phone = isDelivery ? apt.clinics?.phone : apt.patients?.phone;
     
     if (!phone) {
-      alert('El paciente no tiene número de teléfono registrado.');
+      alert(isDelivery ? 'La clínica no tiene número de teléfono registrado.' : 'El paciente no tiene número de teléfono registrado.');
       return;
     }
 
     const emoji = "✨";
     let message = "";
-    if (isToday) {
+    if (isDelivery) {
+      message = `${emoji} Hola ${location}, ¿ya se comunicaron con el paciente para confirmar que se presentará hoy a las ${time} hs? Por favor confírmennos. ${emoji}`;
+    } else if (isToday) {
       message = `${emoji} Hola ${patientName}, te recordamos tu cita de hoy a las ${time} hs en ${location}. ¿Podrás asistir? ${emoji}`;
     } else {
-      message = `${emoji} Hola ${patientName}, te recordamos tu cita de mañana a las ${time} hs en ${location}. ¿Nos confirmas tu asistencia? ${emoji}`;
+      message = `${emoji} Hola ${patientName}, te recordamos tu cita de mañana a las ${time} hs en ${location}. ¿Nos confirmás tu asistencia? ${emoji}`;
     }
 
     const encodedMessage = encodeURIComponent(message);
@@ -193,40 +196,54 @@ export const HybridAgenda = ({ profile }: { profile: any }) => {
   const renderAptCard = (apt: any, isToday: boolean = true) => {
     const isConfirmed = apt.status === 'confirmed';
     const isCancelled = apt.status === 'cancelled';
+    const isDelivery = apt.type === 'delivery';
+    // For delivery apts: show clinic name and info; for clinic apts: show patient name
+    const displayName = isDelivery ? (apt.clinics?.name || 'Clínica Delivery') : apt.patients?.full_name;
+    const confirmText = isDelivery
+      ? '¿Ya se comunicaron con el paciente? ¿Va a comparecer hoy?'
+      : '¿Confirmó?';
 
     return (
       <div 
         key={apt.id} 
         className={`apt-card glass relative ${isConfirmed ? 'is-confirmed' : ''} ${isCancelled ? 'is-cancelled' : ''}`}
-        style={{ borderLeft: `3px solid ${apt.type === 'delivery' ? 'var(--primary)' : 'var(--success)'}` }}
+        style={{ borderLeft: `3px solid ${isDelivery ? '#8B5CF6' : 'var(--success)'}` }}
       >
         <div className="apt-info">
           <div className="apt-time-row">
             <Clock size={14} color={isConfirmed ? 'black' : 'var(--primary)'} />
             <span className="apt-time">{new Date(apt.start_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} hs</span>
-            <span className={`badge ${apt.type === 'delivery' ? 'badge-delivery' : 'badge-clinic'}`}>{apt.type === 'delivery' ? 'D' : 'C'}</span>
+            <span className={`badge ${isDelivery ? 'badge-delivery' : 'badge-clinic'}`}>{isDelivery ? '🏥 D' : 'C'}</span>
           </div>
           
           <div>
             <h4 
-              className={`apt-patient cursor-pointer hover:underline ${isConfirmed ? 'text-black' : 'text-gold'}`}
+              className={`apt-patient cursor-pointer hover:underline ${isConfirmed ? 'text-black' : (isDelivery ? '' : 'text-gold')}`}
+              style={{ color: isDelivery ? '#A78BFA' : undefined }}
               onClick={() => setConfirmingId(apt.id)}
             >
-              {apt.patients?.full_name}
+              {displayName}
             </h4>
+            {isDelivery && apt.clinics?.address && (
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                📍 {apt.clinics.address}
+              </p>
+            )}
           </div>
 
-          <div className="apt-meta">
-            <MapPin size={12} />
-            <span className={isConfirmed ? 'text-black opacity-70' : ''}>
-              {apt.type === 'clinic' ? apt.clinics?.name : (apt.clinics?.name || 'Delivery')}
-            </span>
-          </div>
+          {!isDelivery && (
+            <div className="apt-meta">
+              <MapPin size={12} />
+              <span className={isConfirmed ? 'text-black opacity-70' : ''}>
+                {apt.clinics?.name || 'Consultorio'}
+              </span>
+            </div>
+          )}
         </div>
 
         {confirmingId === apt.id && (
           <div className="confirm-bubble glass">
-            <p>¿Confirmó?</p>
+            <p style={{ fontSize: '0.8rem' }}>{confirmText}</p>
             <div className="flex gap-2 mt-2">
               <button className="confirm-btn si" onClick={() => updateAptStatus(apt.id, 'confirmed')}>SÍ</button>
               <button className="confirm-btn no" onClick={() => { setConfirmingId(null); setShowOptionsId(apt.id); }}>NO</button>
@@ -243,13 +260,26 @@ export const HybridAgenda = ({ profile }: { profile: any }) => {
         )}
 
         <div className="apt-actions">
-          <button className={`btn ${isConfirmed ? 'btn-white' : 'btn-primary'} btn-icon`} title="Confirmar Llegada" onClick={() => navigate('/patients', { state: { selectedPatientId: apt.patient_id, autoOpenTab: 'evolution' } })}>
+          <button 
+            className={`btn ${isConfirmed ? 'btn-white' : 'btn-primary'} btn-icon`} 
+            title={isDelivery ? 'Ver Perfil de Clínica' : 'Abrir Evoluciones'} 
+            onClick={() => {
+              if (isDelivery) {
+                navigate(`/clinic/${apt.clinic_id}`);
+              } else {
+                navigate('/patients', { state: { selectedPatientId: apt.patient_id, autoOpenTab: 'evolution' } });
+              }
+            }}
+          >
             <CheckCircle2 size={16} />
           </button>
           <button className="btn btn-outline btn-icon" style={{ borderColor: isConfirmed ? 'rgba(0,0,0,0.2)' : '' }} title="WhatsApp" onClick={() => handleWhatsApp(apt, isToday)}>
             <MessageCircle size={16} color={isConfirmed ? 'black' : 'var(--success)'} />
           </button>
-          <button className="btn btn-outline btn-icon" style={{ borderColor: isConfirmed ? 'rgba(0,0,0,0.2)' : '' }} title="Llamar" onClick={() => window.open(`tel:${apt.patients?.phone}`)}>
+          <button className="btn btn-outline btn-icon" style={{ borderColor: isConfirmed ? 'rgba(0,0,0,0.2)' : '' }} title="Llamar" onClick={() => {
+            const phone = isDelivery ? apt.clinics?.phone : apt.patients?.phone;
+            if (phone) window.open(`tel:${phone}`);
+          }}>
             <Phone size={16} color={isConfirmed ? 'black' : 'var(--primary)'} />
           </button>
         </div>
