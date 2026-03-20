@@ -412,3 +412,68 @@ input:-webkit-autofill:active {
     border-bottom: 1px solid rgba(255,255,255,0.05);
   }
 }
+
+/* ─── Global Mobile Fixes ─── */
+
+/* Prevent any element from causing horizontal scroll */
+body {
+  overflow-x: hidden;
+}
+
+/* Minimum touch target size for all interactive elements */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+  }
+
+  button, a, select {
+    min-height: 40px;
+  }
+
+  /* Odontogram header: stack buttons vertically on small screens */
+  .odontogram-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  /* Treatment type selector bar: allow horizontal scroll */
+  .controls {
+    scrollbar-width: none;
+  }
+  .controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Font adjustments */
+  h2 { font-size: 1.3rem; }
+  h3 { font-size: 1.1rem; }
+
+  /* Cards with side padding on narrow screens */
+  .card {
+    padding: 0.9rem;
+  }
+}
+
+/* iOS safe area padding for bottom nav */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav {
+    padding-bottom: calc(0.8rem + env(safe-area-inset-bottom));
+  }
+
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Horizontal scroll utility for button/tab rows */
+.scroll-x {
+  display: flex;
+  overflow-x: auto;
+  gap: 0.5rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-x::-webkit-scrollbar {
+  display: none;
+}

@@ -88,3 +88,50 @@
   background: var(--primary);
   border-radius: 4px;
 }
+
+/* ─── Mobile Responsiveness ─── */
+@media (max-width: 768px) {
+  .tooth-grid {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    padding: 0.8rem 0.4rem;
+    overflow-x: auto;
+  }
+
+  .tooth-wrapper {
+    width: 36px !important;
+    height: 44px !important;
+  }
+
+  .odontogram-container {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tooth-grid {
+    grid-template-columns: repeat(8, 34px);
+    gap: 2px;
+    padding: 0.6rem 0.2rem;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .tooth-wrapper {
+    width: 30px !important;
+    height: 38px !important;
+  }
+
+  .tooth-container span {
+    font-size: 0.55rem !important;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+
+  .odontogram-section {
+    overflow-x: auto;
+  }
+}

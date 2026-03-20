@@ -222,7 +222,7 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
             {isHistory ? 'Visualizando estado inicial del tratamiento archivado' : 'Registro visual de patologías y tratamientos en curso'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.8rem' }}>
+        <div className="odontogram-header-actions" style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {!isHistory && (
             <>
               <button 
