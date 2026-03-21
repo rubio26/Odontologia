@@ -1,0 +1,34 @@
+{
+  "packageId": "com.lumini.studio.twa",
+  "host": "odontologia-eight.vercel.app",
+  "name": "Lumini Studio",
+  "shortName": "Lumini",
+  "themeColor": "#D4AF37",
+  "navigationColor": "#0A0A0B",
+  "backgroundColor": "#0A0A0B",
+  "startUrl": "/",
+  "iconUrl": "https://odontologia-eight.vercel.app/pwa-512x512.png",
+  "maskableIconUrl": "https://odontologia-eight.vercel.app/pwa-512x512.png",
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "display": "standalone",
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainableView": false,
+  "serviceWorker": {
+    "src": "/sw.js"
+  },
+  "webManifestUrl": "https://odontologia-eight.vercel.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "generatorApp": "bubblewrap-cli",
+  "isChromeOSOnly": false,
+  "isCheckAndroidDependencies": true,
+  "enableNotifications": true,
+  "locationDelegation": true,
+  "playServicesLocation": true,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  }
+}
