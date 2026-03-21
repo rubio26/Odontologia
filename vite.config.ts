@@ -14,10 +14,10 @@ export default defineConfig({
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'DentalFlow',
-        short_name: 'DentalFlow',
-        description: 'Gestión Dental Delivery & Clínica',
-        theme_color: '#0EA5E9',
+        name: 'Lumini Studio',
+        short_name: 'Lumini',
+        description: 'Gestión Dental Premium',
+        theme_color: '#D4AF37',
         icons: [
           {
             src: 'pwa-192x192.png',
