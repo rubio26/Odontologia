@@ -17,9 +17,9 @@ export const Tooth: React.FC<ToothProps> = ({ id, surfaces, onClick }) => {
   const isIncrustacion = Object.values(surfaces).every(s => s === 'incrustacion');
 
   return (
-    <div className={`tooth-container ${isAbsent ? 'absent' : ''}`} style={{ textAlign: 'center' }}>
-      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '4px', display: 'block' }}>{id}</span>
-      <div className="tooth-wrapper" style={{ position: 'relative', width: '45px', height: '55px', margin: '0 auto' }}>
+    <div className={`tooth-container ${isAbsent ? 'absent' : ''}`}>
+      <span className="tooth-id">{id}</span>
+      <div className="tooth-wrapper">
         <svg viewBox="0 0 100 120" className="tooth-svg">
           {/* Main Tooth Shape / Outline */}
           <path 

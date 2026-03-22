@@ -213,19 +213,19 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
 
   return (
     <div className="odontogram-container" style={{ animation: 'fadeIn 0.5s ease' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-luxury)', paddingBottom: '1rem' }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.4rem' }}>
-            <h3 style={{ fontSize: '1.2rem', color: 'var(--text-gold)' }}>Morfología Dental</h3>
-            <div className="glass" style={{ padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <header className="odontogram-header">
+        <div className="header-info">
+          <div className="title-row">
+            <h3 className="section-title-clinical">Morfología Dental</h3>
+            <div className="history-selector glass">
               <History size={14} color="var(--primary)" />
               <select 
                 value={selectedTreatmentId}
                 onChange={(e) => setSelectedTreatmentId(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', outline: 'none' }}
+                className="history-select"
               >
-                <option value="active" style={{ background: '#111' }}>{activeTreatment ? `🟢 Activo: ${activeTreatment.description}` : '⚪ Sin tratamiento activo'}</option>
-                <optgroup label="Archivo de Tratamientos" style={{ background: '#111' }}>
+                <option value="active" style={{ background: '#111' }}>{activeTreatment ? `🟢 Activo: ${activeTreatment.description}` : '⚪ Sin activo'}</option>
+                <optgroup label="Archivo" style={{ background: '#111' }}>
                   {treatments.filter(t => t.status === 'finished').map(t => (
                     <option key={t.id} value={t.id} style={{ background: '#111' }}>
                       📁 {new Date(t.finished_at).toLocaleDateString()}: {t.description}
@@ -235,44 +235,43 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
               </select>
             </div>
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {isHistory ? 'Visualizando estado inicial del tratamiento archivado' : 'Registro visual de patologías y tratamientos en curso'}
+          <p className="subtitle-clinical">
+            {isHistory ? 'Historial: Estado inicial' : 'Visual de patologías y tratamientos'}
           </p>
         </div>
-        <div className="odontogram-header-actions" style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+
+        <div className="odontogram-actions">
           {!isHistory && (
             <>
               <button 
-                className="btn btn-outline" 
-                style={{ height: '40px', borderColor: 'var(--error)', color: 'var(--error)' }}
+                className="btn btn-outline btn-compact btn-danger-outline" 
                 onClick={handleClear}
+                title="Limpiar"
               >
-                <RotateCcw size={16} /> Limpiar
+                <RotateCcw size={16} /> <span>Limpiar</span>
               </button>
               <button 
-                className="btn btn-outline" 
-                style={{ height: '40px', borderColor: 'var(--success)', color: 'var(--success)' }}
+                className="btn btn-outline btn-compact btn-success-outline" 
                 onClick={handleFinalize}
                 disabled={saving || !activeTreatment}
               >
-                <ShieldCheck size={16} /> Finalizar Tratamiento
+                <ShieldCheck size={16} /> <span>Finalizar</span>
               </button>
               <button 
-                className="btn btn-primary" 
-                style={{ height: '40px' }}
+                className="btn btn-primary btn-compact" 
                 onClick={async () => {
                   const success = await handleSave();
-                  if (success) alert('Mapa dental actualizado con éxito.');
+                  if (success) alert('Guardado con éxito.');
                 }}
                 disabled={saving}
               >
-                {saving ? '...' : <><Save size={16} /> Guardar Cambios</>}
+                {saving ? '...' : <><Save size={16} /> <span>Guardar</span></>}
               </button>
             </>
           )}
           {isHistory && (
-            <div className="badge badge-clinic" style={{ height: '40px', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)' }}>
-              <Archive size={16} style={{ marginRight: '0.5rem' }} /> MODO LECTURA: ARCHIVO
+            <div className="badge badge-clinic archive-badge">
+              <Archive size={14} /> MODO LECTURA
             </div>
           )}
         </div>

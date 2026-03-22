@@ -16,7 +16,26 @@
   margin-top: 1rem;
 }
 
+.tooth-container {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tooth-id {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+  display: block;
+}
+
 .tooth-wrapper {
+  position: relative;
+  width: 45px;
+  height: 55px;
+  margin: 0 auto;
   transition: transform 0.2s ease;
 }
 
@@ -91,16 +110,33 @@
 
 /* ─── Mobile Responsiveness ─── */
 @media (max-width: 768px) {
+  .odontogram-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+
+  .odontogram-actions {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+
+  .btn-compact {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.65rem !important;
+    height: auto !important;
+  }
+
   .tooth-grid {
     grid-template-columns: repeat(8, 1fr);
     gap: 4px;
-    padding: 0.8rem 0.4rem;
+    padding: 1rem 0.4rem;
     overflow-x: auto;
   }
 
   .tooth-wrapper {
-    width: 36px !important;
-    height: 44px !important;
+    width: 36px;
+    height: 46px;
   }
 
   .odontogram-container {
@@ -109,8 +145,37 @@
 }
 
 @media (max-width: 480px) {
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+
+  .history-selector {
+    width: 100%;
+  }
+
+  .history-select {
+    width: 100%;
+    font-size: 0.7rem;
+  }
+
+  .odontogram-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem !important;
+  }
+  
+  .odontogram-actions button {
+    width: 100%;
+  }
+
+  .odontogram-actions button:last-of-type {
+    grid-column: span 2;
+  }
+
   .tooth-grid {
-    grid-template-columns: repeat(8, 34px);
+    grid-template-columns: repeat(8, 38px);
     gap: 2px;
     padding: 0.6rem 0.2rem;
     width: max-content;
@@ -118,12 +183,12 @@
   }
 
   .tooth-wrapper {
-    width: 30px !important;
-    height: 38px !important;
+    width: 34px;
+    height: 42px;
   }
 
-  .tooth-container span {
-    font-size: 0.55rem !important;
+  .tooth-id {
+    font-size: 0.65rem;
   }
 
   .section-label {
@@ -133,5 +198,75 @@
 
   .odontogram-section {
     overflow-x: auto;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
   }
+}
+
+/* ─── Header Elements ─── */
+.odontogram-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-luxury);
+  padding-bottom: 1rem;
+}
+
+.title-row {
+  display: flex;
+  align-items: center; 
+  gap: 1rem; 
+  margin-bottom: 0.4rem;
+}
+
+.section-title-clinical {
+  font-size: 1.2rem; 
+  color: var(--text-gold);
+}
+
+.history-selector {
+  padding: 0.3rem 0.6rem; 
+  border-radius: 8px; 
+  font-size: 0.75rem; 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem;
+}
+
+.history-select {
+  background: transparent; 
+  border: none; 
+  color: white; 
+  cursor: pointer; 
+  outline: none;
+}
+
+.subtitle-clinical {
+  font-size: 0.75rem; 
+  color: var(--text-muted);
+}
+
+.odontogram-actions {
+  display: flex; 
+  gap: 0.6rem; 
+  flex-wrap: wrap; 
+  justify-content: flex-end;
+}
+
+.btn-danger-outline {
+  border-color: var(--error) !important;
+  color: var(--error) !important;
+}
+
+.btn-success-outline {
+  border-color: var(--success) !important;
+  color: var(--success) !important;
+}
+
+.archive-badge {
+  height: 40px; 
+  display: flex; 
+  align-items: center; 
+  background: rgba(255,255,255,0.05);
 }
