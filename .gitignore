@@ -28,3 +28,20 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Android / Bubblewrap
+.gradle/
+app/
+build/
+gradle/
+gradlew
+gradlew.bat
+gradle.properties
+settings.gradle
+build.gradle
+manifest-checksum.txt
+*.apk
+*.aab
+*.idsig
+*.keystore
+store_icon.png
+

@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.odontologia_eight.twa",
+      "sha256_cert_fingerprints": [
+        "62:C8:45:C4:B3:A3:05:D5:5E:DE:0B:EC:5F:E5:8B:E7:22:74:4C:37:0B:EA:55:34:CD:46:83:98:8C:C5:EF:A9"
+      ]
+    }
+  }
+]
