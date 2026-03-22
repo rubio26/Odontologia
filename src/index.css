@@ -477,3 +477,31 @@ body {
 .scroll-x::-webkit-scrollbar {
   display: none;
 }
+
+/* Card header actions responsive layout */
+.card-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .card-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+  }
+  
+  .card-header-actions .actions-group {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .card-header-actions .actions-group .btn {
+    flex: 1;
+    font-size: 0.72rem;
+    padding: 0.5rem 0.3rem;
+  }
+}

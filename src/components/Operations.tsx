@@ -703,40 +703,41 @@ export const Operations = ({ profile }: { profile: any }) => {
               position: 'relative', 
               borderLeft: (registryType === 'clinics' && item.is_home) ? '4px solid var(--primary)' : '1px solid var(--border-luxury)' 
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{item.name}</p>
-                    {registryType === 'clinics' && item.is_home && <span className="badge badge-clinic">PRINCIPAL</span>}
+              <div className="card-header-actions">
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-gold)' }}>{item.name}</p>
+                    {registryType === 'clinics' && item.is_home && <span className="badge badge-clinic" style={{ fontSize: '0.6rem' }}>PRINCIPAL</span>}
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                    {item.phone && `📱 ${item.phone}`} {item.address && `| 📍 ${item.address}`}
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    {item.phone && <span>📱 {item.phone}</span>}
+                    {item.address && <span>📍 {item.address}</span>}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                <div className="actions-group" style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                   {registryType === 'clinics' && (
                     <button
                       className="btn btn-outline"
-                      style={{ padding: '0.3rem 0.7rem', fontSize: '0.65rem' }}
+                      style={{ padding: '0.4rem 0.8rem', height: 'auto', minHeight: '36px' }}
                       onClick={() => navigate(`/clinic/${item.id}`)}
                     >
-                      <ArrowRight size={12} /> Ver Perfil
+                      <ArrowRight size={14} /> Ver Perfil
                     </button>
                   )}
                   {registryType === 'clinics' && !item.is_home && (
                     <button 
                       onClick={() => handleSetHome(item.id)}
                       className="btn btn-primary" 
-                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.65rem', border: 'none', background: 'var(--primary)' }}
+                      style={{ padding: '0.4rem 0.8rem', border: 'none', background: 'var(--primary)', height: 'auto', minHeight: '36px' }}
                     >
-                      <Home size={12} /> Definir Sede Principal
+                      <Home size={14} /> Definir Sede
                     </button>
                   )}
                   <button 
                     onClick={() => handleDeleteEntry(item.id, registryType)}
-                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '0.2rem' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '0.4rem', marginLeft: 'auto' }}
                   >
-                    <EyeOff size={16} />
+                    <EyeOff size={18} />
                   </button>
                 </div>
               </div>
