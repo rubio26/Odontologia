@@ -40,8 +40,8 @@ settings.gradle
 build.gradle
 manifest-checksum.txt
 *.apk
+PLAYSTORE_GUIDE.md
 *.aab
 *.idsig
 *.keystore
 store_icon.png
-
