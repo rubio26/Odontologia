@@ -33,6 +33,22 @@ export const Operations = ({ profile }: { profile: any }) => {
     fetchOperationsData();
   }, []);
 
+  const handleUpdateProfileName = async (newName: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: newName })
+        .eq('id', profile.id);
+
+      if (error) throw error;
+      
+      alert('Nombre actualizado con éxito. El cambio se verá reflejado al recargar.');
+      window.location.reload();
+    } catch (err: any) {
+      alert('Error actualizando perfil: ' + err.message);
+    }
+  };
+
   const fetchOperationsData = async () => {
     setLoadingInitial(true);
     try {
@@ -435,6 +451,37 @@ export const Operations = ({ profile }: { profile: any }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2>Centro Operativo</h2>
         <div className="badge badge-clinic">Bioseguridad Nivel A</div>
+      </div>
+
+      {/* SECCIÓN: MI PERFIL */}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <User size={18} color="var(--primary)" /> Mi Perfil
+        </h3>
+        <div className="card glass" style={{ padding: '1.2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-white)' }}>
+                {profile?.full_name || 'Sin nombre'}
+              </p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {profile?.email} • {profile?.is_admin ? 'Administrador' : 'Profesional'}
+              </p>
+            </div>
+            <button 
+              className="btn btn-outline" 
+              style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem', height: 'auto' }}
+              onClick={() => {
+                const newName = window.prompt('Editar nombre completo:', profile?.full_name);
+                if (newName && newName !== profile?.full_name) {
+                  handleUpdateProfileName(newName);
+                }
+              }}
+            >
+              Editar Nombre
+            </button>
+          </div>
+        </div>
       </div>
 
       <div style={{ marginBottom: '2.5rem' }}>
