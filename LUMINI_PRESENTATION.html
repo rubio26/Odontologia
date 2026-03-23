@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumini Studio - Presentación Comercial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --dark: #1A1A1A;
+            --white: #FFFFFF;
+            --gray: #F8F9FA;
+            --text: #2D3436;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            color: var(--text);
+            line-height: 1.6;
+            background: #f0f0f0;
+        }
+
+        .page {
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 2cm;
+            margin: 1cm auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media print {
+            body { background: white; }
+            .page { margin: 0; box-shadow: none; page-break-after: always; }
+            .no-print { display: none; }
+        }
+
+        /* Elements */
+        .gold-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: var(--gold);
+        }
+
+        .header {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: 8px;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .logo span { color: var(--gold); }
+
+        .subtitle {
+            font-size: 12px;
+            letter-spacing: 4px;
+            color: var(--gold);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: var(--gold);
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--gold);
+            padding-left: 15px;
+        }
+
+        p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        .hero-img {
+            width: 100%;
+            height: 350px;
+            background: var(--dark);
+            border-radius: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-style: italic;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid var(--gold);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: var(--gray);
+            padding: 25px;
+            border-radius: 15px;
+            border-top: 3px solid var(--gold);
+        }
+
+        .card h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+            font-size: 14px;
+        }
+
+        .feature-list li::before {
+            content: '✦';
+            position: absolute;
+            left: 0;
+            color: var(--gold);
+        }
+
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding-top: 40px;
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-print {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--dark);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-print:hover { background: var(--gold); }
+    </style>
+</head>
+<body>
+
+    <button class="btn-print no-print" onclick="window.print()">
+        Descargar como PDF ⎙
+    </button>
+
+    <!-- PÁGINA 1: PORTADA -->
+    <div class="page">
+        <div class="gold-bar"></div>
+        <div class="header">
+            <div class="logo">LUMINI<span>★</span></div>
+            <div class="subtitle">Estética Dental Avanzada</div>
+        </div>
+
+        <div class="hero-img" style="background-image: url('https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=1000')">
+            <!-- Imagen de repuesto si falla la generación -->
+        </div>
+
+        <h1>Gestión Inteligente para Profesionales de la Salud Dental</h1>
+        
+        <p style="font-size: 18px; font-weight: 300;">
+            Lumini Studio no es solo un software; es el socio estratégico que las clínicas modernas y los odontólogos independientes necesitan para escalar su práctica profesional al siguiente nivel.
+        </p>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Para Odontólogos</h3>
+                <p style="font-size: 14px;">Libertad y control total sobre tu práctica clínica estés donde estés.</p>
+                <ul class="feature-list">
+                    <li>Historiales clínicos digitales.</li>
+                    <li>Odontograma visual interactivo.</li>
+                    <li>Acceso 24/7 desde móvil o tablet.</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Para Clínicas</h3>
+                <p style="font-size: 14px;">Eficiencia operativa y transparencia financiera en cada sede.</p>
+                <ul class="feature-list">
+                    <li>Balances financieros en tiempo real.</li>
+                    <li>Control de órdenes de laboratorio.</li>
+                    <li>Gestión de acceso multi-usuario.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            Lumini Studio® - Soluciones Profesionales en Gestión Dental
+        </div>
+    </div>
+
+    <!-- PÁGINA 2: SERVICIOS Y TECNOLOGÍA -->
+    <div class="page">
+        <div class="gold-bar"></div>
+        
+        <h2>Excelencia en Gestión Clínica</h2>
+        <p>Nuestro ecosistema digital está diseñado para eliminar la fricción administrativa, permitiéndote enfocar tu atención en lo más importante: la salud y estética de tus pacientes.</p>
+
+        <div style="display: flex; gap: 40px; margin-top: 30px;">
+            <div style="flex: 1;">
+                <h3 style="color: var(--dark); border-bottom: 2px solid var(--gold); padding-bottom: 5px; margin-bottom: 15px;">Módulos Principales</h3>
+                <ul class="feature-list" style="margin-bottom: 30px;">
+                    <li><strong>Smart Agenda</strong>: Gestión dinámica de citas optimizada para dispositivos móviles.</li>
+                    <li><strong>Módulo Financiero</strong>: Seguimiento detallado de ingresos, egresos y deudas por paciente.</li>
+                    <li><strong>Control de Laboratorios</strong>: Gestión centralizada de trabajos de prótesis y estética.</li>
+                    <li><strong>Budgets & Payments</strong>: Generación automatizada de presupuestos estéticos listos para imprimir.</li>
+                </ul>
+            </div>
+            <div style="flex: 0.8; background: var(--dark); padding: 30px; border-radius: 20px; color: white;">
+                <h3 style="color: var(--gold); margin-bottom: 15px;">Seguridad Certificada</h3>
+                <p style="color: rgba(255,255,255,0.7); font-size: 14px;">
+                    Toda la información está cifrada y almacenada en infraestructuras de nivel bancario.
+                </p>
+                <ul class="feature-list" style="color: rgba(255,255,255,0.9);">
+                    <li>Aislamiento total de datos.</li>
+                    <li>Copias de seguridad diarias.</li>
+                    <li>Autenticación segura multi-factor.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Beneficios Exclusivos</h2>
+        <div class="grid">
+            <div style="background: white; border: 1px solid #eee; padding: 20px; border-radius: 12px;">
+                <h4 style="color: var(--gold);">Visibilidad 360°</h4>
+                <p style="font-size: 13px;">Conoce el estado de tu clínica o laboratorio en un solo vistazo desde tu tablero de control.</p>
+            </div>
+            <div style="background: white; border: 1px solid #eee; padding: 20px; border-radius: 12px;">
+                <h4 style="color: var(--gold);">Cero Instalaciones</h4>
+                <p style="font-size: 13px;">Accede instantáneamente desde cualquier navegador sin hardware especializado.</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 50px; text-align: center; background: var(--gray); padding: 40px; border-radius: 20px;">
+            <h1 style="color: var(--gold); font-size: 24px;">Eleva tu estándar profesional.</h1>
+            <p>Únete a la nueva era de la odontología digital con Lumini Studio.</p>
+            <div style="font-weight: 800; font-size: 20px; color: var(--dark);">Suscripción Nivel GOLD</div>
+        </div>
+
+        <div class="footer">
+            Contáctanos para una demo personalizada • www.lumini-studio.com
+        </div>
+    </div>
+
+</body>
+</html>
