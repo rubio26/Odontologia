@@ -4,11 +4,11 @@ import { supabase } from '../../lib/supabase';
 
 export const PhotoGallery = ({ patientId, profile }: { patientId: string, profile: any }) => {
   const [view, setView] = useState<'grid' | 'compare'>('grid');
-  const [category, setCategory] = useState<'photos' | 'xrays'>('photos');
+  const [filter, setFilter] = useState<'all' | 'photos' | 'xrays'>('all');
+  const [uploadType, setUploadType] = useState<'photos' | 'xrays'>('photos');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [photos, setPhotos] = useState<any[]>([]);
-  const [xrays, setXrays] = useState<any[]>([]);
+  const [media, setMedia] = useState<any[]>([]);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,8 +26,7 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
 
       if (error) throw error;
       if (data) {
-        setPhotos(data.filter(i => i.category === 'photos'));
-        setXrays(data.filter(i => i.category === 'xrays'));
+        setMedia(data);
       }
     } catch (err) {
       console.error('Error fetching images:', err);
@@ -44,7 +43,7 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
     try {
       // 1. Subir al Storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${patientId}/${category}/${Date.now()}.${fileExt}`;
+      const fileName = `${patientId}/${uploadType}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('patient-media')
@@ -64,19 +63,15 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
           patient_id: patientId,
           doctor_id: profile.id,
           url: publicUrl,
-          category,
-          type: category === 'photos' ? 'Nueva Foto' : 'Nueva Placa'
+          category: uploadType,
+          type: uploadType === 'photos' ? 'Nueva Foto' : 'Nueva Placa'
         })
         .select()
         .single();
 
       if (dbError) throw dbError;
 
-      if (category === 'photos') {
-        setPhotos([...photos, data]);
-      } else {
-        setXrays([...xrays, data]);
-      }
+      setMedia([...media, data]);
       setView('grid'); // Asegurar vista de cuadrícula
       alert('Imagen guardada exitosamente en el historial del paciente.');
     } catch (err) {
@@ -108,17 +103,13 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
 
       if (error) throw error;
 
-      if (category === 'photos') {
-        setPhotos(photos.filter(p => p.id !== id));
-      } else {
-        setXrays(xrays.filter(x => x.id !== id));
-      }
+      setMedia(media.filter(m => m.id !== id));
     } catch (err) {
       console.error('Error removing:', err);
     }
   };
 
-  const currentItems = category === 'photos' ? photos : xrays;
+  const currentItems = filter === 'all' ? media : media.filter(m => m.category === filter);
 
   if (loading) return (
     <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -129,26 +120,38 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
   return (
     <div style={{ marginTop: '1rem' }}>
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        <button 
-          className={`btn ${category === 'photos' ? 'btn-primary' : 'btn-outline'}`} 
-          style={{ flex: 1, fontSize: '0.8rem' }}
-          onClick={() => setCategory('photos')}
-        >
-          Fotos Clínicas
-        </button>
-        <button 
-          className={`btn ${category === 'xrays' ? 'btn-primary' : 'btn-outline'}`} 
-          style={{ flex: 1, fontSize: '0.8rem' }}
-          onClick={() => setCategory('xrays')}
-        >
-          Radiografías
-        </button>
+      <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        {[
+          { id: 'all', label: 'Todo el Contenido' },
+          { id: 'photos', label: 'Fotos Clínicas' },
+          { id: 'xrays', label: 'Radiografías' }
+        ].map(f => (
+          <button 
+            key={f.id}
+            className={`btn ${filter === f.id ? 'btn-primary' : 'btn-outline'}`} 
+            style={{ padding: '0.5rem 1.2rem', fontSize: '0.75rem', borderRadius: '20px' }}
+            onClick={() => setFilter(f.id as any)}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-        <h3 style={{ fontSize: '1.1rem' }}>{category === 'photos' ? 'Galería de Casos' : 'Archivo Radiográfico'}</h3>
+        <h3 style={{ fontSize: '1.1rem' }}>Soportes de Diagnóstico</h3>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="toggle-upload glass" style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '2px' }}>
+             <button 
+                className={`btn ${uploadType === 'photos' ? 'btn-primary' : 'btn-ghost'}`} 
+                style={{ fontSize: '0.6rem', padding: '0.3rem 0.6rem', minWidth: '40px' }}
+                onClick={() => setUploadType('photos')}
+             >Foto</button>
+             <button 
+                className={`btn ${uploadType === 'xrays' ? 'btn-primary' : 'btn-ghost'}`} 
+                style={{ fontSize: '0.6rem', padding: '0.3rem 0.6rem', minWidth: '40px' }}
+                onClick={() => setUploadType('xrays')}
+             >Placa</button>
+          </div>
           <button className={`btn ${view === 'grid' ? 'btn-primary' : 'btn-outline'}`} style={{ padding: '0.4rem' }} onClick={() => setView('grid')}>
             <Grid size={18} />
           </button>
@@ -211,10 +214,10 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
             {uploading ? (
               <Loader2 className="animate-spin" size={24} color="var(--primary)" />
             ) : (
-              category === 'photos' ? <Camera size={24} color="var(--primary)" /> : <FileSearch size={24} color="var(--primary)" />
+              uploadType === 'photos' ? <Camera size={24} color="var(--primary)" /> : <FileSearch size={24} color="var(--primary)" />
             )}
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              {uploading ? 'Cargando...' : `Cargar ${category === 'photos' ? 'Foto' : 'Placa'}`}
+              {uploading ? 'Cargando...' : `Subir Nuevo (${uploadType === 'photos' ? 'Foto' : 'Radiografía'})`}
             </span>
           </label>
         </div>
