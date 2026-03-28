@@ -15,6 +15,7 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
   const [treatments, setTreatments] = useState<any[]>([]);
   const [selectedTreatmentId, setSelectedTreatmentId] = useState<string>('active');
   const [activeTreatment, setActiveTreatment] = useState<any>(null);
+  const [recordId, setRecordId] = useState<string | null>(null);
 
   const states = [
     { id: 'restauracion', label: 'Restauración de caries', color: '#EF4444' },
@@ -63,11 +64,12 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
       if (selectedTreatmentId === 'active') {
         const { data: odontogram } = await supabase
           .from('odontograms')
-          .select('data')
+          .select('id, data')
           .eq('patient_id', patientId)
           .eq('doctor_id', profile.id)
           .single();
         
+        setRecordId(odontogram?.id || null);
         setData(odontogram?.data || {});
       } else {
         const treatment = treatments.find(t => t.id === selectedTreatmentId);
@@ -90,11 +92,12 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
       const { error } = await supabase
         .from('odontograms')
         .upsert({ 
+          id: recordId || undefined,
           patient_id: patientId, 
           doctor_id: profile.id,
           data,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'patient_id' });
+        }, { onConflict: 'id' });
 
       if (error) throw error;
 
@@ -149,7 +152,14 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
 
       // Ensure clinic_payments record exists and is up to date for delivery treatments
       if (activeTreatment.clinic_id) {
+        const { data: existingCP } = await supabase
+          .from('clinic_payments')
+          .select('id')
+          .eq('treatment_id', activeTreatment.id)
+          .single();
+
         await supabase.from('clinic_payments').upsert({
+          id: existingCP?.id,
           doctor_id: profile.id,
           clinic_id: activeTreatment.clinic_id,
           patient_id: patientId,
@@ -159,7 +169,7 @@ export const Odontogram = ({ patientId, profile }: { patientId?: string, profile
           total_amount: activeTreatment.total_amount,
           paid_amount: activeTreatment.paid_amount || 0,
           status: (activeTreatment.paid_amount || 0) >= activeTreatment.total_amount ? 'paid' : 'pending'
-        }, { onConflict: 'treatment_id' });
+        }, { onConflict: 'id' });
       }
 
       const { error: clearError } = await supabase

@@ -215,14 +215,22 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
 
       // 2. Update current odontogram if budget has data
       if (budget.odontogram_data) {
+        const { data: existingOdontogram } = await supabase
+          .from('odontograms')
+          .select('id')
+          .eq('patient_id', patientId)
+          .eq('doctor_id', profile.id)
+          .single();
+
         await supabase
           .from('odontograms')
           .upsert({ 
+            id: existingOdontogram?.id,
             patient_id: patientId, 
             doctor_id: profile.id,
             data: budget.odontogram_data,
             updated_at: new Date().toISOString()
-          }, { onConflict: 'patient_id' });
+          }, { onConflict: 'id' });
       }
 
       // 3. Mark budget as completed

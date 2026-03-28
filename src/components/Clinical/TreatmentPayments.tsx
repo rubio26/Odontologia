@@ -93,22 +93,29 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
 
       if (treatError) throw treatError;
       
-      // 3. If delivery, update clinic_payments tracking
-      if (isDelivery) {
-        // Upsert clinic payment record for this treatment/budget
-        const { error: cpError } = await supabase
-          .from('clinic_payments')
-          .upsert({
-            doctor_id: profile.id,
-            clinic_id: activeTreatment.clinic_id,
-            patient_id: patientId,
-            budget_id: activeTreatment.budget_id,
-            treatment_id: activeTreatment.id,
-            description: `Abono: ${activeTreatment.description}`,
-            total_amount: activeTreatment.total_amount,
-            paid_amount: newPaid,
-            status: newPaid >= activeTreatment.total_amount ? 'paid' : 'partial'
-          }, { onConflict: 'treatment_id' });
+        // 3. If delivery, update clinic_payments tracking
+        if (isDelivery) {
+          const { data: existingCP } = await supabase
+            .from('clinic_payments')
+            .select('id')
+            .eq('treatment_id', activeTreatment.id)
+            .single();
+
+          // Upsert clinic payment record for this treatment/budget
+          const { error: cpError } = await supabase
+            .from('clinic_payments')
+            .upsert({
+              id: existingCP?.id,
+              doctor_id: profile.id,
+              clinic_id: activeTreatment.clinic_id,
+              patient_id: patientId,
+              budget_id: activeTreatment.budget_id,
+              treatment_id: activeTreatment.id,
+              description: `Abono: ${activeTreatment.description}`,
+              total_amount: activeTreatment.total_amount,
+              paid_amount: newPaid,
+              status: newPaid >= activeTreatment.total_amount ? 'paid' : 'partial'
+            }, { onConflict: 'id' });
         
         if (cpError) console.error("Error updating clinic_payments:", cpError);
       }

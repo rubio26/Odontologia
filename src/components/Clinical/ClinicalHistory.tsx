@@ -62,7 +62,7 @@ export const ClinicalHistory = ({ patientId, profile }: { patientId: string, pro
           doctor_id: profile.id,
           ...data,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'patient_id' });
+        }, { onConflict: 'id' });
 
       if (error) throw error;
       alert('Historia clínica actualizada correctamente.');
