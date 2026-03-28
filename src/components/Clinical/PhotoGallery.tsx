@@ -9,6 +9,7 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
   const [uploading, setUploading] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
   const [xrays, setXrays] = useState<any[]>([]);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchImages();
@@ -76,9 +77,11 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
       } else {
         setXrays([...xrays, data]);
       }
+      setView('grid'); // Asegurar vista de cuadrícula
+      alert('Imagen guardada exitosamente en el historial del paciente.');
     } catch (err) {
       console.error('Error uploading:', err);
-      alert('Error al cargar la imagen. Asegúrate de que el bucket "patient-media" existe en tu Supabase.');
+      alert('Error en la carga. Verifica que el bucket "patient-media" existe y tiene permisos públicos.');
     } finally {
       setUploading(false);
       if (e.target) e.target.value = '';
@@ -158,12 +161,25 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
       {view === 'grid' ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           {currentItems.map(p => (
-            <div key={p.id} className="card glass" style={{ padding: '0', overflow: 'hidden', position: 'relative' }}>
-              <img src={p.url} alt={p.type} style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
-              <div style={{ padding: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div key={p.id} className="card glass image-grid-card" style={{ padding: '0', overflow: 'hidden', position: 'relative' }}>
+              <div 
+                className="image-overlay-trigger"
+                onClick={() => setSelectedImageUrl(p.url)}
+                title="Click para pantalla completa"
+              >
+                <Maximize2 size={24} color="white" className="maximize-icon" />
+              </div>
+              <img src={p.url} alt={p.type} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+              <div style={{ padding: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.4)' }}>
                 <span className="badge badge-delivery" style={{ fontSize: '0.6rem' }}>{p.type}</span>
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button className="btn" style={{ padding: '0.2rem', color: 'var(--primary)' }}><Share2 size={14} /></button>
+                  <button 
+                    className="btn" 
+                    style={{ padding: '0.2rem', color: 'var(--primary)' }}
+                    onClick={() => setSelectedImageUrl(p.url)}
+                  >
+                    <Maximize2 size={14} />
+                  </button>
                   <button className="btn" style={{ padding: '0.2rem', color: 'var(--error)' }} onClick={() => removeHandle(p.id, p.url)}><Trash2 size={14} /></button>
                 </div>
               </div>
@@ -223,6 +239,92 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
           </div>
         </div>
       )}
+
+      {/* MODAL PARA PANTALLA COMPLETA */}
+      {selectedImageUrl && (
+        <div 
+          className="fullscreen-modal"
+          onClick={() => setSelectedImageUrl(null)}
+        >
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <img src={selectedImageUrl} alt="Pantalla completa" />
+            <div className="modal-actions">
+               <button className="btn btn-primary" onClick={() => setSelectedImageUrl(null)}>Cerrar</button>
+               <a href={selectedImageUrl} download target="_blank" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Share2 size={16} /> Abrir Original
+               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .image-grid-card {
+           cursor: pointer;
+           transition: transform 0.2s ease;
+        }
+        .image-grid-card:hover {
+           transform: translateY(-2px);
+        }
+        .image-overlay-trigger {
+           position: absolute;
+           top: 0; left: 0; right: 0; bottom: 44px;
+           background: rgba(0,0,0,0);
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           z-index: 2;
+           transition: background 0.2s ease;
+        }
+        .image-overlay-trigger:hover {
+           background: rgba(0,0,0,0.4);
+        }
+        .maximize-icon {
+           opacity: 0;
+           transform: scale(0.8);
+           transition: all 0.2s ease;
+        }
+        .image-overlay-trigger:hover .maximize-icon {
+           opacity: 1;
+           transform: scale(1);
+        }
+        
+        /* MODAL STYLES */
+        .fullscreen-modal {
+           position: fixed;
+           top: 0; left: 0; right: 0; bottom: 0;
+           background: rgba(0,0,0,0.95);
+           z-index: 10000;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           backdrop-filter: blur(10px);
+           animation: fadeIn 0.3s ease;
+        }
+        .modal-content {
+           max-width: 95vw;
+           max-height: 95vh;
+           display: flex;
+           flex-direction: column;
+           gap: 1.5rem;
+           align-items: center;
+        }
+        .modal-content img {
+           max-width: 100%;
+           max-height: 80vh;
+           border-radius: 12px;
+           box-shadow: 0 0 50px rgba(212,175,55,0.2);
+           border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-actions {
+           display: flex;
+           gap: 1rem;
+        }
+        @keyframes fadeIn {
+           from { opacity: 0; }
+           to { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 };
