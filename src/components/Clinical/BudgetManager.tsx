@@ -189,6 +189,23 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
     window.open(`https://wa.me/${patientPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`);
   };
  
+  const handleDeleteBudget = async (budget: Budget) => {
+    if (!confirm(`¿Estás seguro que deseas eliminar el presupuesto "${budget.description}"?\n\nEsta acción no se puede deshacer.`)) return;
+    
+    try {
+      const { error } = await supabase
+        .from('budgets')
+        .delete()
+        .eq('id', budget.id)
+        .eq('doctor_id', profile.id);
+
+      if (error) throw error;
+      fetchBudgets();
+    } catch (err: any) {
+      alert('Error al eliminar: ' + err.message);
+    }
+  };
+
   const handleStartTreatment = async (budget: Budget) => {
     if (!confirm(`¿Deseas iniciar el tratamiento "${budget.description}"? Esto actualizará el odontograma activo con los cambios propuestos.`)) return;
     
@@ -388,6 +405,14 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
                 )}
                 <button className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => shareViaWhatsApp(budget)}><MessageCircle size={16} /> WhatsApp</button>
                 <button className="btn glass" style={{ flex: 1, fontSize: '0.75rem', color: 'white' }} onClick={() => handlePrint(budget)}><FileText size={16} /> Imprimir</button>
+                <button
+                  className="btn glass"
+                  style={{ fontSize: '0.75rem', color: 'var(--error, #e74c3c)', padding: '0.4rem 0.6rem' }}
+                  onClick={() => handleDeleteBudget(budget)}
+                  title="Eliminar presupuesto"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             </div>
           ))
