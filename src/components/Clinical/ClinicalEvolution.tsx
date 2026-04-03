@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Plus, Save, Activity, Heart, Calendar, Clock } from 'lucide-react';
+import { CurrencyInput } from '../CurrencyInput';
 
 interface EvolutionNote {
   id: string;
@@ -225,11 +226,10 @@ export const ClinicalEvolution = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             <div className="input-group">
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Entrega de Pago (PYG)</label>
-              <input 
-                type="number" 
+              <CurrencyInput 
                 className="input-field" 
                 value={newNote.amount_paid} 
-                onChange={e => setNewNote({...newNote, amount_paid: parseInt(e.target.value)})} 
+                onChange={val => setNewNote({...newNote, amount_paid: val})} 
               />
             </div>
             <div className="input-group">

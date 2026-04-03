@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Terminal, History, FlaskConical, Lock, Wallet, EyeOff, Loader2, User, FileText, Calendar as CalendarIcon, PieChart, ArrowRight, Home } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { CurrencyInput } from './CurrencyInput';
 
 export const Operations = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
@@ -635,11 +636,10 @@ export const Operations = ({ profile }: { profile: any }) => {
                 </div>
                 <div className="input-group">
                   <Wallet size={16} />
-                  <input 
-                    type="number"
+                  <CurrencyInput 
                     placeholder="Precio" 
-                    value={newLabOrder.price || ''} 
-                    onChange={e => setNewLabOrder({...newLabOrder, price: Number(e.target.value)})}
+                    value={newLabOrder.price} 
+                    onChange={val => setNewLabOrder({...newLabOrder, price: val})}
                   />
                 </div>
               </div>

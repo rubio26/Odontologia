@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, Wallet, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { CurrencyInput } from './CurrencyInput';
 
 export const Financials = () => {
   const [exchangeRate, setExchangeRate] = useState(7450);
@@ -62,12 +63,11 @@ export const Financials = () => {
               Costo Insumos (Guaraníes)
             </label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input 
-                type="number" 
+              <CurrencyInput 
                 className="card glass" 
                 style={{ flex: 1, padding: '0.8rem', color: 'white' }} 
                 value={costPYG}
-                onChange={(e) => setCostPYG(Number(e.target.value))}
+                onChange={setCostPYG}
               />
               <div style={{ display: 'flex', alignItems: 'center', padding: '0 0.5rem', fontSize: '0.8rem', color: 'var(--primary)' }}>
                 ≈ ${costUSD.toFixed(2)}
@@ -78,12 +78,11 @@ export const Financials = () => {
             <label style={{ fontSize: '0.75em', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
               Honorarios / Precio al Paciente (PYG)
             </label>
-            <input 
-              type="number" 
+            <CurrencyInput 
               className="card glass" 
               style={{ width: '100%', padding: '0.8rem', color: 'white' }} 
               value={pricePYG}
-              onChange={(e) => setPricePYG(Number(e.target.value))}
+              onChange={setPricePYG}
             />
           </div>
           <div>

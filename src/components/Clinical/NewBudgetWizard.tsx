@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { PatientSearch } from '../PatientSearch';
 import { Tooth } from '../Odontogram/Tooth';
+import { CurrencyInput } from '../CurrencyInput';
 import { ArrowLeft, ArrowRight, Save, Plus, Trash2, User, CheckCircle, Calculator } from 'lucide-react';
 
 const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
@@ -156,12 +157,11 @@ export const NewBudgetWizard = ({ profile }: { profile: any }) => {
                   />
                 </div>
                 <div className="input-group">
-                  <input 
-                    type="number"
+                  <CurrencyInput 
                     className="input-field" 
                     placeholder="Precio" 
                     value={item.price}
-                    onChange={e => updateItem(i, 'price', e.target.value)}
+                    onChange={val => updateItem(i, 'price', val)}
                   />
                 </div>
                 <button 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { DollarSign, PlusCircle, History, Receipt, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { CurrencyInput } from '../CurrencyInput';
 
 export const TreatmentPayments = ({ patientId, profile }: { patientId: string, profile: any }) => {
   const [activeTreatment, setActiveTreatment] = useState<any>(null);
@@ -8,7 +9,7 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentNote, setPaymentNote] = useState('Abono a tratamiento');
 
   const [clinics, setClinics] = useState<any[]>([]);
@@ -64,10 +65,10 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
   };
 
   const handleRegisterPayment = async () => {
-    if (!activeTreatment || !paymentAmount) return;
+    if (!activeTreatment || paymentAmount <= 0) return;
     setSaving(true);
     try {
-      const amount = parseFloat(paymentAmount);
+      const amount = paymentAmount;
       
       // 1. Create Transaction
       const { error: txError } = await supabase
@@ -123,7 +124,7 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
       }
 
       setShowPaymentModal(false);
-      setPaymentAmount('');
+      setPaymentAmount(0);
       setPaymentNote('Abono a tratamiento');
       await fetchData();
     } catch (err: any) {
@@ -270,11 +271,10 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
 
             <div className="input-group" style={{ marginBottom: '1rem' }}>
               <DollarSign size={18} />
-              <input 
-                type="number" 
+              <CurrencyInput 
                 placeholder="Monto solicitado (PYG)" 
                 value={paymentAmount}
-                onChange={e => setPaymentAmount(e.target.value)}
+                onChange={setPaymentAmount}
                 autoFocus
               />
             </div>
