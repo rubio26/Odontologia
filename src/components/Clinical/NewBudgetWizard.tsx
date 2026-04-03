@@ -11,12 +11,14 @@ const lowerTeeth = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 
 export const NewBudgetWizard = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [step, setStep] = useState(1);
   const clinicId = location.state?.clinicId;
+  const preSelectedPatient = location.state?.patient;
+  
+  const [step, setStep] = useState(preSelectedPatient ? 2 : 1);
   const [loading, setLoading] = useState(false);
   
   // State
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [selectedPatient, setSelectedPatient] = useState<any>(preSelectedPatient || null);
   const [odontogramData, setOdontogramData] = useState<Record<number, any>>({});
   const [items, setItems] = useState<{ description: string, price: number }[]>([{ description: '', price: 0 }]);
   const [description, setDescription] = useState('');
@@ -132,7 +134,8 @@ export const NewBudgetWizard = ({ profile }: { profile: any }) => {
                 </div>
              </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <button className="btn btn-outline" onClick={() => preSelectedPatient ? navigate(-1) : setStep(1)}>Atrás</button>
             <button className="btn btn-primary" onClick={() => setStep(3)}>Continuar <ArrowRight size={18} /></button>
           </div>
         </div>

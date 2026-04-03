@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Plus, Save, Trash2, MessageCircle, FileText, Activity } from 'lucide-react';
+import { Plus, MessageCircle, FileText, Activity, Trash2 } from 'lucide-react';
 
 interface BudgetItem {
   description: string;
@@ -20,20 +21,10 @@ interface Budget {
 }
 
 export const BudgetManager = ({ patientId, profile, patientName, patientPhone, doctorName, onStartTreatment }: { patientId: string, profile: any, patientName: string, patientPhone?: string, doctorName?: string, onStartTreatment?: () => void }) => {
+  const navigate = useNavigate();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const [newBudget, setNewBudget] = useState<{
-    description: string;
-    num_sessions: number;
-    items: BudgetItem[];
-  }>({
-    description: '',
-    num_sessions: 1,
-    items: [{ description: '', price: 0 }]
-  });
 
   useEffect(() => {
     fetchBudgets();
@@ -51,60 +42,6 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
       setBudgets(data);
     }
     setLoading(false);
-  };
-
-  const addItem = () => {
-    setNewBudget({
-      ...newBudget,
-      items: [...newBudget.items, { description: '', price: 0 }]
-    });
-  };
-
-  const removeItem = (index: number) => {
-    const updatedItems = newBudget.items.filter((_, i) => i !== index);
-    setNewBudget({ ...newBudget, items: updatedItems });
-  };
-
-  const updateItem = (index: number, field: keyof BudgetItem, value: string | number) => {
-    const updatedItems = [...newBudget.items];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
-    setNewBudget({ ...newBudget, items: updatedItems });
-  };
-
-  const calculateTotal = () => {
-    return newBudget.items.reduce((acc, item) => acc + (Number(item.price) || 0), 0);
-  };
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
-    try {
-      const total = calculateTotal();
-      const { error } = await supabase.from('budgets').insert({
-        patient_id: patientId,
-        doctor_id: profile.id,
-        description: newBudget.description || 'Plan de Tratamiento',
-        items: newBudget.items,
-        total_cost: total,
-        num_sessions: newBudget.num_sessions,
-        status: 'active'
-      });
-
-      if (error) throw error;
-      
-      setIsCreating(false);
-      setNewBudget({
-        description: '',
-        num_sessions: 1,
-        items: [{ description: '', price: 0 }]
-      });
-      fetchBudgets();
-    } catch (err: any) {
-      alert('Error: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handlePrint = (budget: Budget) => {
@@ -207,10 +144,48 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
   };
 
   const handleStartTreatment = async (budget: Budget) => {
-    if (!confirm(`¿Deseas iniciar el tratamiento "${budget.description}"? Esto actualizará el odontograma activo con los cambios propuestos.`)) return;
-    
     setSaving(true);
     try {
+      // 0. Check if there's already an active treatment for this patient
+      const { data: existingActives } = await supabase
+        .from('treatments')
+        .select('id, description')
+        .eq('patient_id', patientId)
+        .eq('doctor_id', profile.id)
+        .eq('status', 'active');
+
+      if (existingActives && existingActives.length > 0) {
+        const activeName = existingActives.map(t => `• ${t.description}`).join('\n');
+        const confirmed = confirm(
+          `⚠️ ATENCIÓN: Este paciente ya tiene un tratamiento activo:\n\n${activeName}\n\n` +
+          `¿Deseas reemplazarlo e iniciar "${budget.description}"?\n\n` +
+          `El tratamiento anterior quedará marcado como cancelado y el nuevo toma prioridad.`
+        );
+        if (!confirmed) {
+          setSaving(false);
+          return;
+        }
+
+        // Cancel all existing active treatments
+        const { error: cancelError } = await supabase
+          .from('treatments')
+          .update({ status: 'cancelled' })
+          .eq('patient_id', patientId)
+          .eq('doctor_id', profile.id)
+          .eq('status', 'active');
+
+        if (cancelError) throw cancelError;
+      } else {
+        // No active treatment — just confirm normally
+        const confirmed = confirm(
+          `¿Deseas iniciar el tratamiento "${budget.description}"?\nEsto actualizará el odontograma activo con los cambios propuestos.`
+        );
+        if (!confirmed) {
+          setSaving(false);
+          return;
+        }
+      }
+
       // 1. Create entry in treatments table
       const { data: treatData, error: treatmentError } = await supabase
         .from('treatments')
@@ -278,6 +253,18 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
     }
   };
 
+  const startNewBudget = () => {
+    navigate('/new-budget', { 
+      state: { 
+        patient: { 
+          id: patientId, 
+          full_name: patientName,
+          phone: patientPhone
+        } 
+      } 
+    });
+  };
+
   if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando presupuestos...</div>;
 
   return (
@@ -289,80 +276,11 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
         <button 
           className="btn btn-primary" 
           style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
-          onClick={() => setIsCreating(!isCreating)}
+          onClick={startNewBudget}
         >
-          {isCreating ? 'Cancelar' : <><Plus size={16} /> Nuevo Presupuesto</>}
+          <Plus size={16} /> Nuevo Presupuesto
         </button>
       </div>
-
-      {isCreating && (
-        <form onSubmit={handleCreate} className="card glass" style={{ marginBottom: '2rem', padding: '1.2rem' }}>
-          <div className="input-group" style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Título del Plan</label>
-            <input 
-              type="text" 
-              className="input-field" 
-              placeholder="Ej: Rehabilitación Superior"
-              value={newBudget.description}
-              onChange={e => setNewBudget({...newBudget, description: e.target.value})}
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            {newBudget.items.map((item, index) => (
-              <div key={index} className="grid-3" style={{ marginBottom: '0.5rem' }}>
-                <input 
-                  type="text" 
-                  className="input-field" 
-                  style={{ fontSize: '0.8rem' }}
-                  placeholder="Procedimiento"
-                  value={item.description}
-                  onChange={e => updateItem(index, 'description', e.target.value)}
-                  required
-                />
-                <input 
-                  type="number" 
-                  className="input-field" 
-                  style={{ fontSize: '0.8rem' }}
-                  placeholder="Precio"
-                  value={item.price}
-                  onChange={e => updateItem(index, 'price', parseInt(e.target.value))}
-                  required
-                />
-                <button 
-                  type="button" 
-                  className="btn glass" 
-                  style={{ padding: 0, color: 'var(--error)' }}
-                  onClick={() => removeItem(index)}
-                  disabled={newBudget.items.length === 1}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-            <button type="button" className="btn btn-outline w-full" onClick={addItem} style={{ fontSize: '0.7rem' }}>
-              <Plus size={14} /> Agregar Item
-            </button>
-          </div>
-
-          <div className="input-group" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sesiones Estimadas</label>
-            <input 
-              type="number" 
-              className="input-field" 
-              min={1}
-              value={newBudget.num_sessions}
-              onChange={e => setNewBudget({...newBudget, num_sessions: parseInt(e.target.value)})}
-              required
-            />
-          </div>
-
-          <button type="submit" className="btn btn-primary w-full" disabled={saving}>
-            <Save size={18} /> {saving ? 'Guardando...' : 'Crear Presupuesto'}
-          </button>
-        </form>
-      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {budgets.length === 0 ? (
@@ -399,7 +317,7 @@ export const BudgetManager = ({ patientId, profile, patientName, patientPhone, d
 
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 {budget.status === 'active' && (
-                  <button className="btn btn-primary" style={{ flex: 1.5, fontSize: '0.75rem' }} onClick={() => handleStartTreatment(budget)}>
+                  <button className="btn btn-primary" style={{ flex: 1.5, fontSize: '0.75rem' }} onClick={() => handleStartTreatment(budget)} disabled={saving}>
                     <Activity size={16} /> Iniciar Tratamiento
                   </button>
                 )}

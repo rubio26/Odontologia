@@ -31,15 +31,17 @@ export const TreatmentPayments = ({ patientId, profile }: { patientId: string, p
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Active Treatment
-      const { data: treats } = await supabase
+      // 1. Fetch Active Treatment (taking the most recent one in case of duplicates)
+      const { data: treatsArr } = await supabase
         .from('treatments')
         .select('*')
         .eq('patient_id', patientId)
         .eq('doctor_id', profile.id)
         .eq('status', 'active')
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1);
       
+      const treats = treatsArr && treatsArr.length > 0 ? treatsArr[0] : null;
       setActiveTreatment(treats);
       setIsDelivery(!!treats?.clinic_id);
       if (treats?.clinic_id) setSelectedClinicId(treats.clinic_id);
