@@ -1,19 +1,38 @@
-import { useState, useEffect } from 'react';
-import { Camera, Grid, Maximize2, Share2, MousePointer2, FileSearch, Trash2, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Camera, Maximize2, Share2, MousePointer2, FileSearch, Trash2, Loader2, ChevronLeft, ChevronRight, X, Layout } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export const PhotoGallery = ({ patientId, profile }: { patientId: string, profile: any }) => {
-  const [view, setView] = useState<'grid' | 'compare'>('grid');
-  const [filter, setFilter] = useState<'all' | 'photos' | 'xrays'>('all');
-  const [uploadType, setUploadType] = useState<'photos' | 'xrays'>('photos');
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [media, setMedia] = useState<any[]>([]);
-  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  
+  // Modal / Carousel State
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [viewerCategory, setViewerCategory] = useState<'photos' | 'xrays' | null>(null);
+  
+  // Comparison State
+  const [isComparing, setIsComparing] = useState(false);
+  const [comparisonIndex, setComparisonIndex] = useState<number | null>(null);
+
+  // Touch Swipe Handling
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     fetchImages();
   }, [patientId]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedIndex === null) return;
+      if (e.key === 'ArrowRight') navigate(1);
+      if (e.key === 'ArrowLeft') navigate(-1);
+      if (e.key === 'Escape') closeViewer();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex, viewerCategory, media]);
 
   const fetchImages = async () => {
     setLoading(true);
@@ -22,12 +41,11 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
         .from('patient_images')
         .select('*')
         .eq('patient_id', patientId)
-        .eq('doctor_id', profile.id);
+        .eq('doctor_id', profile.id)
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
-      if (data) {
-        setMedia(data);
-      }
+      if (data) setMedia(data);
     } catch (err) {
       console.error('Error fetching images:', err);
     } finally {
@@ -35,15 +53,14 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'photos' | 'xrays') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
+    setUploading(type);
     try {
-      // 1. Subir al Storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${patientId}/${uploadType}/${Date.now()}.${fileExt}`;
+      const fileName = `${patientId}/${type}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('patient-media')
@@ -51,281 +68,443 @@ export const PhotoGallery = ({ patientId, profile }: { patientId: string, profil
 
       if (uploadError) throw uploadError;
 
-      // 2. Obtener URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('patient-media')
         .getPublicUrl(fileName);
 
-      // 3. Guardar en la tabla
       const { data, error: dbError } = await supabase
         .from('patient_images')
         .insert({
           patient_id: patientId,
           doctor_id: profile.id,
           url: publicUrl,
-          category: uploadType,
-          type: uploadType === 'photos' ? 'Nueva Foto' : 'Nueva Placa'
+          category: type,
+          type: type === 'photos' ? 'Foto Clínica' : 'Radiografía'
         })
         .select()
         .single();
 
       if (dbError) throw dbError;
-
       setMedia([...media, data]);
-      setView('grid'); // Asegurar vista de cuadrícula
-      alert('Imagen guardada exitosamente en el historial del paciente.');
     } catch (err) {
       console.error('Error uploading:', err);
-      alert('Error en la carga. Verifica que el bucket "patient-media" existe y tiene permisos públicos.');
+      alert('Error en la carga.');
     } finally {
-      setUploading(false);
+      setUploading(null);
       if (e.target) e.target.value = '';
     }
   };
 
-  const removeHandle = async (id: string, url: string) => {
-    if (!confirm('¿Estás seguro de eliminar esta imagen?')) return;
+  const removeHandle = async (e: React.MouseEvent, id: string, url: string) => {
+    e.stopPropagation();
+    if (!confirm('¿Eliminar esta imagen?')) return;
 
     try {
-      // Intentar extraer el path relativo del URL para borrar del storage
-      // Formato esperado: .../public/patient-media/patientId/category/filename.ext
       const pathParts = url.split('patient-media/');
       if (pathParts.length > 1) {
-        const filePath = pathParts[1];
-        await supabase.storage.from('patient-media').remove([filePath]);
+        await supabase.storage.from('patient-media').remove([pathParts[1]]);
       }
 
-      const { error } = await supabase
-        .from('patient_images')
-        .delete()
-        .eq('id', id)
-        .eq('doctor_id', profile.id);
-
-      if (error) throw error;
-
+      await supabase.from('patient_images').delete().eq('id', id);
       setMedia(media.filter(m => m.id !== id));
+      if (selectedIndex !== null) closeViewer();
     } catch (err) {
       console.error('Error removing:', err);
     }
   };
 
-  const currentItems = filter === 'all' ? media : media.filter(m => m.category === filter);
+  const openViewer = (index: number, category: 'photos' | 'xrays') => {
+    const categoryMedia = media.filter(m => m.category === category);
+    const globalMediaItem = categoryMedia[index];
+    const globalIndex = media.findIndex(m => m.id === globalMediaItem.id);
+    
+    setSelectedIndex(globalIndex);
+    setViewerCategory(category);
+    setIsComparing(false);
+    setComparisonIndex(null);
+  };
 
-  if (loading) return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <Loader2 className="animate-spin" size={32} color="var(--primary)" />
+  const closeViewer = () => {
+    setSelectedIndex(null);
+    setViewerCategory(null);
+    setIsComparing(false);
+    setComparisonIndex(null);
+  };
+
+  const navigate = (direction: number) => {
+    if (selectedIndex === null || !viewerCategory) return;
+    
+    const categoryItems = media.filter(m => m.category === viewerCategory);
+    const currentInCategoryIndex = categoryItems.findIndex(m => m.id === media[selectedIndex].id);
+    
+    let nextIndex = currentInCategoryIndex + direction;
+    if (nextIndex < 0) nextIndex = categoryItems.length - 1;
+    if (nextIndex >= categoryItems.length) nextIndex = 0;
+    
+    const nextGlobalIndex = media.findIndex(m => m.id === categoryItems[nextIndex].id);
+    setSelectedIndex(nextGlobalIndex);
+  };
+
+  // Touch handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+    if (Math.abs(diff) > 50) {
+      navigate(diff > 0 ? 1 : -1);
+    }
+    touchStartX.current = null;
+  };
+
+  const photos = media.filter(m => m.category === 'photos');
+  const xrays = media.filter(m => m.category === 'xrays');
+
+  const renderSection = (title: string, items: any[], type: 'photos' | 'xrays', icon: any) => (
+    <div style={{ marginBottom: '2.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--text-gold)' }}>
+          {icon} {title} <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>({items.length})</span>
+        </h3>
+        <label className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', borderRadius: '8px' }}>
+          <input type="file" style={{ display: 'none' }} accept="image/*" onChange={e => handleUpload(e, type)} disabled={!!uploading} />
+          {uploading === type ? 'Cargando...' : '+ Agregar'}
+        </label>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+        {items.map((item, idx) => (
+          <div 
+            key={item.id} 
+            className="gallery-card glass"
+            onClick={() => openViewer(idx, type)}
+          >
+            <img src={item.url} alt="" />
+            <button className="delete-btn" onClick={e => removeHandle(e, item.id, item.url)}>
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+        {items.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+            Sin registros en esta sección.
+          </div>
+        )}
+      </div>
     </div>
   );
 
+  const viewerItems = viewerCategory ? media.filter(m => m.category === viewerCategory) : [];
+  const currentViewerItem = selectedIndex !== null ? media[selectedIndex] : null;
+
   return (
-    <div style={{ marginTop: '1rem' }}>
-
-      <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        {[
-          { id: 'all', label: 'Todo el Contenido' },
-          { id: 'photos', label: 'Fotos Clínicas' },
-          { id: 'xrays', label: 'Radiografías' }
-        ].map(f => (
-          <button 
-            key={f.id}
-            className={`btn ${filter === f.id ? 'btn-primary' : 'btn-outline'}`} 
-            style={{ padding: '0.5rem 1.2rem', fontSize: '0.75rem', borderRadius: '20px' }}
-            onClick={() => setFilter(f.id as any)}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-        <h3 style={{ fontSize: '1.1rem' }}>Soportes de Diagnóstico</h3>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <div className="toggle-upload glass" style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '2px' }}>
-             <button 
-                className={`btn ${uploadType === 'photos' ? 'btn-primary' : 'btn-ghost'}`} 
-                style={{ fontSize: '0.6rem', padding: '0.3rem 0.6rem', minWidth: '40px' }}
-                onClick={() => setUploadType('photos')}
-             >Foto</button>
-             <button 
-                className={`btn ${uploadType === 'xrays' ? 'btn-primary' : 'btn-ghost'}`} 
-                style={{ fontSize: '0.6rem', padding: '0.3rem 0.6rem', minWidth: '40px' }}
-                onClick={() => setUploadType('xrays')}
-             >Placa</button>
-          </div>
-          <button className={`btn ${view === 'grid' ? 'btn-primary' : 'btn-outline'}`} style={{ padding: '0.4rem' }} onClick={() => setView('grid')}>
-            <Grid size={18} />
-          </button>
-          <button className={`btn ${view === 'compare' ? 'btn-primary' : 'btn-outline'}`} style={{ padding: '0.4rem' }} onClick={() => setView('compare')}>
-            <Maximize2 size={18} />
-          </button>
-        </div>
-      </div>
-
-      {view === 'grid' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          {currentItems.map(p => (
-            <div key={p.id} className="card glass image-grid-card" style={{ padding: '0', overflow: 'hidden', position: 'relative' }}>
-              <div 
-                className="image-overlay-trigger"
-                onClick={() => setSelectedImageUrl(p.url)}
-                title="Click para pantalla completa"
-              >
-                <Maximize2 size={24} color="white" className="maximize-icon" />
-              </div>
-              <img src={p.url} alt={p.type} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
-              <div style={{ padding: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.4)' }}>
-                <span className="badge badge-delivery" style={{ fontSize: '0.6rem' }}>{p.type}</span>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button 
-                    className="btn" 
-                    style={{ padding: '0.2rem', color: 'var(--primary)' }}
-                    onClick={() => setSelectedImageUrl(p.url)}
-                  >
-                    <Maximize2 size={14} />
-                  </button>
-                  <button className="btn" style={{ padding: '0.2rem', color: 'var(--error)' }} onClick={() => removeHandle(p.id, p.url)}><Trash2 size={14} /></button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <label 
-            className="card glass" 
-            style={{ 
-              height: '150px', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              gap: '0.5rem', 
-              borderStyle: 'dashed', 
-              cursor: uploading ? 'wait' : 'pointer',
-              borderColor: 'var(--primary)',
-              opacity: uploading ? 0.7 : 1
-            }}
-          >
-            <input 
-              type="file" 
-              style={{ display: 'none' }} 
-              accept="image/*" 
-              onChange={handleFileChange}
-              disabled={uploading}
-            />
-            {uploading ? (
-              <Loader2 className="animate-spin" size={24} color="var(--primary)" />
-            ) : (
-              uploadType === 'photos' ? <Camera size={24} color="var(--primary)" /> : <FileSearch size={24} color="var(--primary)" />
-            )}
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              {uploading ? 'Cargando...' : `Subir Nuevo (${uploadType === 'photos' ? 'Foto' : 'Radiografía'})`}
-            </span>
-          </label>
-        </div>
+    <div className="photo-gallery" style={{ paddingBottom: '2rem' }}>
+      {loading ? (
+        <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 className="animate-spin" size={32} color="var(--primary)" /></div>
       ) : (
-        <div className="card glass" style={{ position: 'relative' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px', background: 'var(--primary)' }}>
-            {currentItems.length >= 2 ? (
-              <>
-                <img src={currentItems[0].url} style={{ width: '100%', height: '250px', objectFit: 'cover' }} />
-                <img src={currentItems[1].url} style={{ width: '100%', height: '250px', objectFit: 'cover' }} />
-              </>
-            ) : (
-              <div style={{ gridColumn: 'span 2', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                Se necesitan al menos 2 imágenes para comparar.
-              </div>
-            )}
-          </div>
-          <div style={{ position: 'absolute', bottom: '10px', right: '10px' }}>
-            <button className="btn btn-primary" style={{ padding: '0.5rem' }}>
-              <MousePointer2 size={18} /> Señalar Hallazgos
-            </button>
-          </div>
-        </div>
+        <>
+          {renderSection('Fotos Clínicas', photos, 'photos', <Camera size={18} />)}
+          {renderSection('Radiografías y Placas', xrays, 'xrays', <FileSearch size={18} />)}
+        </>
       )}
 
-      {/* MODAL PARA PANTALLA COMPLETA */}
-      {selectedImageUrl && (
-        <div 
-          className="fullscreen-modal"
-          onClick={() => setSelectedImageUrl(null)}
-        >
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <img src={selectedImageUrl} alt="Pantalla completa" />
-            <div className="modal-actions">
-               <button className="btn btn-primary" onClick={() => setSelectedImageUrl(null)}>Cerrar</button>
-               <a href={selectedImageUrl} download target="_blank" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Share2 size={16} /> Abrir Original
-               </a>
+      {/* VIEWER MODAL */}
+      {currentViewerItem && (
+        <div className="viewer-overlay" onClick={closeViewer}>
+          <div className="viewer-content" onClick={e => e.stopPropagation()}>
+            <button className="close-btn" onClick={closeViewer}><X size={24} /></button>
+            
+            {/* Header / Actions */}
+            <div className="viewer-header">
+              <div className="viewer-info">
+                <span className="badge badge-gold">{currentViewerItem.type}</span>
+                <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                  {viewerItems.findIndex(m => m.id === currentViewerItem.id) + 1} / {viewerItems.length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.8rem' }}>
+                <button 
+                  className={`btn ${isComparing ? 'btn-primary' : 'btn-outline'}`} 
+                  onClick={() => setIsComparing(!isComparing)}
+                  style={{ gap: '0.4rem', padding: '0.4rem 1rem' }}
+                >
+                  <Layout size={16} /> {isComparing ? 'Salir Comparación' : 'Comparar'}
+                </button>
+                <a href={currentViewerItem.url} download target="_blank" className="btn btn-outline" style={{ padding: '0.4rem' }}>
+                  <Share2 size={16} />
+                </a>
+              </div>
+            </div>
+
+            {/* Main Stage */}
+            <div 
+              className="viewer-stage" 
+              onTouchStart={handleTouchStart} 
+              onTouchEnd={handleTouchEnd}
+            >
+              {!isComparing ? (
+                <>
+                  <button className="nav-btn prev" onClick={() => navigate(-1)}><ChevronLeft size={32} /></button>
+                  <div className="main-image-container">
+                    <img src={currentViewerItem.url} className="main-image" alt="" />
+                  </div>
+                  <button className="nav-btn next" onClick={() => navigate(1)}><ChevronRight size={32} /></button>
+                </>
+              ) : (
+                <div className="comparison-grid">
+                  <div className="compare-pane">
+                    <div className="compare-label">ANTES</div>
+                    <img src={currentViewerItem.url} alt="Antes" />
+                  </div>
+                  <div className="compare-pane">
+                    <div className="compare-label" style={{ color: 'var(--success)' }}>DESPUÉS</div>
+                    {comparisonIndex !== null ? (
+                      <img src={media[comparisonIndex].url} alt="Después" />
+                    ) : (
+                      <div className="select-prompt">
+                        <MousePointer2 size={32} style={{ marginBottom: '1rem', opacity: 0.4 }} />
+                        <p>Selecciona la foto de abajo para comparar</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Thumbnails Strip */}
+            <div className="thumb-strip-container">
+              <div className="thumb-strip">
+                {viewerItems.map((item) => {
+                  const itemGlobalIndex = media.findIndex(m => m.id === item.id);
+                  const isSelected = itemGlobalIndex === (isComparing ? comparisonIndex : selectedIndex);
+                  return (
+                    <div 
+                      key={item.id}
+                      className={`thumb-item ${isSelected ? 'active' : ''}`}
+                      onClick={() => isComparing ? setComparisonIndex(itemGlobalIndex) : setSelectedIndex(itemGlobalIndex)}
+                    >
+                      <img src={item.url} alt="" />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       <style>{`
-        .image-grid-card {
+        .gallery-card {
+           position: relative;
+           height: 140px;
+           border-radius: 12px;
+           overflow: hidden;
            cursor: pointer;
-           transition: transform 0.2s ease;
+           border: 1px solid rgba(255,255,255,0.05);
+           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .image-grid-card:hover {
-           transform: translateY(-2px);
+        .gallery-card:hover {
+           transform: scale(1.03);
+           border-color: var(--primary);
+           box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         }
-        .image-overlay-trigger {
+        .gallery-card img {
+           width: 100%;
+           height: 100%;
+           object-fit: cover;
+        }
+        .gallery-card .delete-btn {
            position: absolute;
-           top: 0; left: 0; right: 0; bottom: 44px;
-           background: rgba(0,0,0,0);
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           z-index: 2;
-           transition: background 0.2s ease;
-        }
-        .image-overlay-trigger:hover {
-           background: rgba(0,0,0,0.4);
-        }
-        .maximize-icon {
+           top: 8px;
+           right: 8px;
+           background: rgba(0,0,0,0.6);
+           border: none;
+           color: var(--error);
+           padding: 4px;
+           border-radius: 6px;
            opacity: 0;
-           transform: scale(0.8);
-           transition: all 0.2s ease;
+           transition: opacity 0.2s;
         }
-        .image-overlay-trigger:hover .maximize-icon {
+        .gallery-card:hover .delete-btn {
            opacity: 1;
-           transform: scale(1);
         }
-        
-        /* MODAL STYLES */
-        .fullscreen-modal {
+
+        /* VIEWER */
+        .viewer-overlay {
            position: fixed;
            top: 0; left: 0; right: 0; bottom: 0;
-           background: rgba(0,0,0,0.95);
-           z-index: 10000;
+           background: rgba(0,0,0,0.98);
+           z-index: 9999;
            display: flex;
            align-items: center;
            justify-content: center;
-           backdrop-filter: blur(10px);
-           animation: fadeIn 0.3s ease;
+           backdrop-filter: blur(20px);
         }
-        .modal-content {
-           max-width: 95vw;
-           max-height: 95vh;
+        .viewer-content {
+           width: 100%;
+           height: 100%;
            display: flex;
            flex-direction: column;
-           gap: 1.5rem;
-           align-items: center;
+           position: relative;
         }
-        .modal-content img {
-           max-width: 100%;
-           max-height: 80vh;
-           border-radius: 12px;
-           box-shadow: 0 0 50px rgba(212,175,55,0.2);
-           border: 1px solid rgba(255,255,255,0.1);
+        .close-btn {
+           position: absolute;
+           top: 20px;
+           right: 20px;
+           background: none;
+           border: none;
+           color: white;
+           cursor: pointer;
+           z-index: 10;
+           opacity: 0.6;
         }
-        .modal-actions {
+        .close-btn:hover { opacity: 1; }
+
+        .viewer-header {
+           padding: 1.5rem 2rem;
            display: flex;
+           justify-content: space-between;
+           align-items: center;
+           z-index: 5;
+        }
+        .viewer-info {
+           display: flex;
+           align-items: center;
            gap: 1rem;
         }
-        @keyframes fadeIn {
-           from { opacity: 0; }
-           to { opacity: 1; }
+
+        .viewer-stage {
+           flex: 1;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           padding: 0 4rem;
+           position: relative;
+           min-height: 0;
+        }
+        .main-image-container {
+           max-width: 100%;
+           max-height: 100%;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+        }
+        .main-image {
+           max-width: 100%;
+           max-height: 70vh;
+           border-radius: 8px;
+           box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+           object-fit: contain;
+           animation: zoomIn 0.3s ease;
+        }
+
+        .nav-btn {
+           background: rgba(255,255,255,0.05);
+           border: none;
+           color: white;
+           padding: 1rem;
+           border-radius: 50%;
+           cursor: pointer;
+           transition: background 0.2s;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.15); }
+        .nav-btn.prev { position: absolute; left: 2rem; }
+        .nav-btn.next { position: absolute; right: 2rem; }
+
+        /* THUMB STRIP */
+        .thumb-strip-container {
+           padding: 1.5rem;
+           background: rgba(0,0,0,0.3);
+           border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .thumb-strip {
+           display: flex;
+           gap: 0.8rem;
+           overflow-x: auto;
+           padding-bottom: 0.5rem;
+           justify-content: center;
+        }
+        .thumb-strip::-webkit-scrollbar { height: 4px; }
+        .thumb-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        
+        .thumb-item {
+           width: 80px;
+           height: 54px;
+           flex-shrink: 0;
+           border-radius: 6px;
+           overflow: hidden;
+           cursor: pointer;
+           border: 2px solid transparent;
+           opacity: 0.4;
+           transition: all 0.2s;
+        }
+        .thumb-item.active {
+           opacity: 1;
+           border-color: var(--primary);
+           transform: translateY(-2px);
+        }
+        .thumb-item:hover { opacity: 1; }
+        .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* COMPARISON */
+        .comparison-grid {
+           display: grid;
+           grid-template-columns: 1fr 1fr;
+           gap: 1.5rem;
+           width: 100%;
+           max-width: 1200px;
+           height: 80%;
+        }
+        .compare-pane {
+           position: relative;
+           background: rgba(255,255,255,0.02);
+           border-radius: 12px;
+           overflow: hidden;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           border: 1px solid rgba(255,255,255,0.05);
+        }
+        .compare-pane img {
+           max-width: 100%;
+           max-height: 100%;
+           object-fit: contain;
+        }
+        .compare-label {
+           position: absolute;
+           top: 1rem;
+           left: 1rem;
+           background: rgba(0,0,0,0.6);
+           padding: 0.4rem 1rem;
+           border-radius: 6px;
+           font-size: 0.7rem;
+           font-weight: 700;
+           color: var(--primary);
+           letter-spacing: 1px;
+           border: 1px solid currentColor;
+           z-index: 2;
+        }
+        .select-prompt {
+           text-align: center;
+           color: var(--text-muted);
+           font-size: 0.9rem;
+        }
+
+        @keyframes zoomIn {
+           from { opacity: 0; transform: scale(0.95); }
+           to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 768px) {
+           .viewer-stage { padding: 0 1rem; }
+           .nav-btn { display: none; }
+           .comparison-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+           .compare-pane { height: 180px; }
         }
       `}</style>
     </div>
