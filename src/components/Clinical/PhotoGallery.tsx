@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera, Maximize2, Share2, MousePointer2, FileSearch, Trash2, Loader2, ChevronLeft, ChevronRight, X, Layout } from 'lucide-react';
+import { Camera, Share2, MousePointer2, FileSearch, Trash2, Loader2, ChevronLeft, ChevronRight, X, Layout } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export const PhotoGallery = ({ patientId, profile }: { patientId: string, profile: any }) => {
